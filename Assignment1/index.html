@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Emoji Translator — Leibniz Universal Characteristic</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Google Sans', 'Segoe UI', Roboto, Arial, sans-serif;
+      background: #f8f9fa;
+      color: #202124;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: #fff;
+      border-bottom: 1px solid #dadce0;
+      padding: 0 24px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .header-icon { font-size: 1.6rem; }
+
+    .header-text h1 {
+      font-size: 1.15rem;
+      font-weight: 500;
+      color: #202124;
+    }
+
+    .header-text p {
+      font-size: 0.75rem;
+      color: #5f6368;
+    }
+
+    /* ── Main layout ── */
+    main {
+      max-width: 960px;
+      margin: 28px auto;
+      padding: 0 16px;
+    }
+
+    .info-banner {
+      background: #e8f0fe;
+      border: 1px solid #c5d5f8;
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-size: 0.82rem;
+      color: #1558d6;
+      margin-bottom: 20px;
+    }
+
+    /* ── Translator card ── */
+    .card {
+      background: #fff;
+      border: 1px solid #dadce0;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .panels {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .panel { position: relative; }
+    .panel:first-child { border-right: 1px solid #dadce0; }
+
+    /* Panel header (language selectors) */
+    .panel-head {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 12px;
+      height: 48px;
+      border-bottom: 1px solid #dadce0;
+      background: #f8f9fa;
+    }
+
+    .lang-select {
+      border: none;
+      background: transparent;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #1a73e8;
+      cursor: pointer;
+      padding: 6px 8px;
+      border-radius: 6px;
+      outline: none;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+
+    .lang-select:focus, .lang-select:hover {
+      background: #e8f0fe;
+    }
+
+    .emoji-label {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #1a73e8;
+      padding: 6px 8px;
+    }
+
+    /* ── Textareas / output ── */
+    textarea {
+      width: 100%;
+      min-height: 220px;
+      border: none;
+      padding: 20px;
+      font-size: 1.05rem;
+      color: #202124;
+      resize: none;
+      outline: none;
+      font-family: inherit;
+      line-height: 1.65;
+      background: transparent;
+    }
+
+    textarea::placeholder { color: #bdc1c6; }
+
+    .output-box {
+      min-height: 220px;
+      padding: 20px;
+      font-size: 1.6rem;
+      line-height: 1.9;
+      word-break: break-all;
+      color: #202124;
+    }
+
+    .output-box.placeholder-state {
+      color: #bdc1c6;
+      font-size: 1rem;
+      font-style: italic;
+    }
+
+    .output-box.loading-state {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #5f6368;
+      font-size: 0.9rem;
+      font-style: normal;
+    }
+
+    .spinner {
+      width: 18px;
+      height: 18px;
+      min-width: 18px;
+      border: 2px solid #dadce0;
+      border-top-color: #1a73e8;
+      border-radius: 50%;
+      animation: spin 0.75s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Panel footer ── */
+    .panel-foot {
+      border-top: 1px solid #dadce0;
+      padding: 6px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 44px;
+    }
+
+    .char-count {
+      font-size: 0.73rem;
+      color: #5f6368;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: none;
+      border: none;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 0.83rem;
+      font-weight: 500;
+      color: #5f6368;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .btn:hover { background: #f1f3f4; color: #202124; }
+
+    /* ── API note ── */
+    .api-note {
+      font-size: 0.75rem;
+      color: #5f6368;
+      text-align: center;
+      margin-top: 14px;
+    }
+
+    .api-note a { color: #1a73e8; text-decoration: none; }
+    .api-note a:hover { text-decoration: underline; }
+
+    /* ── Responsive ── */
+    @media (max-width: 580px) {
+      .panels { grid-template-columns: 1fr; }
+      .panel:first-child { border-right: none; border-bottom: 1px solid #dadce0; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <span class="header-icon">🎲</span>
+  <div class="header-text">
+    <h1>Leibniz Emoji Translator</h1>
+    <p>Universal Characteristic — encode any language into emoji symbols</p>
+  </div>
+</header>
+
+<main>
+  <div class="info-banner">
+    🌍 Multi-language support via <strong>MyMemory Translation API</strong> — type in any language and it is first translated to English, then converted to emojis.
+  </div>
+
+  <div class="card">
+    <div class="panels">
+
+      <!-- Left: input -->
+      <div class="panel">
+        <div class="panel-head">
+          <select class="lang-select" id="sourceLang" title="Source language">
+            <option value="en">English</option>
+            <option value="es">Spanish</option>
+            <option value="fr">French</option>
+            <option value="de">German</option>
+            <option value="it">Italian</option>
+            <option value="pt">Portuguese</option>
+            <option value="ru">Russian</option>
+            <option value="zh">Chinese (Simplified)</option>
+            <option value="ja">Japanese</option>
+            <option value="ko">Korean</option>
+            <option value="ar">Arabic</option>
+            <option value="hi">Hindi</option>
+            <option value="nl">Dutch</option>
+            <option value="pl">Polish</option>
+            <option value="tr">Turkish</option>
+            <option value="sv">Swedish</option>
+            <option value="da">Danish</option>
+          </select>
+        </div>
+        <textarea
+          id="inputText"
+          placeholder="Enter text…"
+          maxlength="500"
+          spellcheck="true"
+        ></textarea>
+        <div class="panel-foot">
+          <span class="char-count" id="charCount">0 / 500</span>
+          <button class="btn" onclick="clearInput()">✕ Clear</button>
+        </div>
+      </div>
+
+      <!-- Right: emoji output -->
+      <div class="panel">
+        <div class="panel-head">
+          <span class="emoji-label">🌐 Emoji</span>
+        </div>
+        <div class="output-box placeholder-state" id="outputBox">
+          Translation will appear here…
+        </div>
+        <div class="panel-foot">
+          <span class="char-count" id="emojiCount"></span>
+          <button class="btn" onclick="copyOutput()">📋 Copy</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <p class="api-note">
+    Powered by <a href="https://mymemory.translated.net" target="_blank" rel="noopener">MyMemory</a>
+    · Free tier: 1 000 requests/day · 17 languages supported
+  </p>
+</main>
+
+<script>
+// ── Phrase dictionary (checked before words) ────────────────────────────────
+const PHRASES = {
+  "i love you":          "❤️",
+  "good morning":        "🌅 👋",
+  "good night":          "🌙 👋",
+  "good afternoon":      "☀️ 👋",
+  "good evening":        "🌆 👋",
+  "good bye":            "👋",
+  "goodbye":             "👋",
+  "thank you very much": "🙏 💯",
+  "thank you":           "🙏",
+  "excuse me":           "🙋",
+  "help me":             "🆘",
+  "save me":             "🆘",
+  "how are you":         "❓ 😊",
+  "i am fine":           "😊 👍",
+  "i miss you":          "😔 ❤️",
+  "happy birthday":      "🎂 🎉",
+  "take care":           "🛡️ ❤️",
+  "be careful":          "⚠️",
+  "oh no":               "😱",
+  "the end":             "🔚",
+  "well done":           "👏",
+  "of course":           "✅",
+  "no problem":          "👍",
+  "break up":            "💔",
+  "fall in love":        "❤️",
+};
+
+// ── Word-to-emoji dictionary ─────────────────────────────────────────────────
+const WORDS = {
+  // Greetings
+  hello:"👋", hi:"👋", hey:"👋", howdy:"👋",
+  bye:"👋", farewell:"👋",
+  please:"🙏", thank:"🙏", thanks:"🙏", sorry:"😔",
+  yes:"✅", no:"❌", maybe:"🤔", ok:"👍", okay:"👍",
+  welcome:"🤗", cheers:"🥂", congrats:"🎉", congratulations:"🎉",
+
+  // Emotions
+  happy:"😊", happiness:"😊", joy:"😂", joyful:"😊",
+  sad:"😢", sadness:"😢", sorrow:"😢",
+  cry:"😭", tears:"😭",
+  angry:"😠", anger:"😠", mad:"😠", furious:"🤬",
+  love:"❤️", hate:"💔",
+  fear:"😨", scared:"😨", afraid:"😨", terror:"😱",
+  surprised:"😲", surprise:"😲", shock:"😱",
+  laugh:"😂", funny:"😄",
+  smile:"😊", grin:"😁",
+  excited:"🤩", excited:"🤩",
+  worried:"😟", worry:"😟", anxious:"😰",
+  bored:"😑", tired:"😴", exhausted:"😴",
+  sick:"🤒", ill:"🤒",
+  cool:"😎", awesome:"🤩", great:"👍", excellent:"🌟",
+  wow:"😮", amazing:"🤩",
+  confused:"😕", embarrassed:"😳",
+  disappointed:"😞", proud:"😤",
+  nervous:"😬", calm:"😌", relaxed:"😌",
+  lonely:"😔", jealous:"😒",
+
+  // Actions
+  eat:"🍽️", food:"🍽️",
+  drink:"🥤",
+  sleep:"💤", bed:"🛏️",
+  wake:"☀️",
+  run:"🏃",
+  walk:"🚶",
+  fly:"✈️",
+  swim:"🏊",
+  read:"📖",
+  write:"✍️",
+  sing:"🎵",
+  dance:"💃",
+  play:"🎮",
+  work:"💼",
+  talk:"💬", speak:"💬",
+  think:"💭",
+  see:"👁️", look:"👀", watch:"📺",
+  hear:"👂", listen:"👂",
+  buy:"🛒",
+  travel:"✈️", trip:"🧳", journey:"🧳",
+  cook:"👨‍🍳",
+  drive:"🚗",
+  study:"📚",
+  help:"🤝",
+  wait:"⏳",
+  want:"🫳",
+  need:"❗",
+  build:"🏗️", make:"🔨", create:"✨",
+  find:"🔍",
+  know:"🧠",
+  give:"🎁",
+  take:"✋",
+  call:"📞",
+  send:"📤",
+  open:"🔓",
+  close:"🔒",
+  ask:"❓",
+  answer:"💡",
+  pay:"💳",
+  win:"🏆",
+  lose:"😞",
+  fight:"⚔️",
+  hug:"🤗",
+  kiss:"💋",
+  meet:"🤝",
+  save:"🛡️",
+  break:"💥",
+  fall:"⬇️",
+  rise:"⬆️",
+  come:"👉",
+  go:"🚶",
+  start:"▶️", begin:"▶️",
+  stop:"⏹️", end:"🔚",
+  change:"🔄", grow:"📈",
+  learn:"📚", teach:"👩‍🏫",
+  show:"👉", tell:"💬",
+  forget:"🌫️", remember:"💭",
+  choose:"🤔",
+  use:"🔧",
+  leave:"🚪",
+  arrive:"✈️",
+  follow:"➡️",
+  lead:"👑",
+  protect:"🛡️",
+  attack:"⚔️",
+  kill:"💀",
+  die:"💀",
+  born:"👶",
+  marry:"💍",
+  jump:"⬆️", climb:"🧗",
+  sit:"🪑", stand:"🧍",
+  hold:"✋", touch:"👆",
+  push:"👉", pull:"👈",
+  throw:"🤾", catch:"🤲",
+  cut:"✂️", fix:"🔧", share:"🤝",
+  communicate:"💬", collaborate:"🤝",
+
+  // People
+  person:"👤", people:"👥",
+  man:"👨", woman:"👩",
+  boy:"👦", girl:"👧",
+  baby:"👶", infant:"👶",
+  child:"🧒", kid:"🧒",
+  family:"👨‍👩‍👦",
+  mother:"👩", mom:"👩", mama:"👩",
+  father:"👨", dad:"👨", papa:"👨",
+  sister:"👧", brother:"👦",
+  grandmother:"👵", grandfather:"👴", grandma:"👵", grandpa:"👴",
+  friend:"🤝",
+  teacher:"👩‍🏫", professor:"👩‍🏫",
+  student:"🎓",
+  doctor:"👨‍⚕️", nurse:"👩‍⚕️",
+  police:"👮",
+  soldier:"💂", warrior:"⚔️",
+  king:"👑", queen:"👑", prince:"🤴", princess:"👸",
+  boss:"👔", leader:"👑",
+  husband:"💑", wife:"💑",
+  couple:"👫",
+  hero:"🦸", villain:"🦹",
+  ghost:"👻", monster:"👹",
+  angel:"👼", devil:"😈",
+  wizard:"🧙", witch:"🧙‍♀️", clown:"🤡",
+
+  // Animals
+  cat:"🐱", kitten:"🐱",
+  dog:"🐶", puppy:"🐶",
+  bird:"🐦",
+  fish:"🐟",
+  horse:"🐴",
+  cow:"🐄", bull:"🐂",
+  pig:"🐷",
+  chicken:"🐔", duck:"🦆",
+  rabbit:"🐰", bunny:"🐰",
+  mouse:"🐭", rat:"🐀",
+  bear:"🐻",
+  lion:"🦁", tiger:"🐯", leopard:"🐆",
+  elephant:"🐘", giraffe:"🦒", zebra:"🦓",
+  monkey:"🐒", gorilla:"🦍",
+  snake:"🐍", dragon:"🐉",
+  frog:"🐸", turtle:"🐢", lizard:"🦎",
+  wolf:"🐺", fox:"🦊",
+  deer:"🦌", goat:"🐐", sheep:"🐑",
+  bee:"🐝", butterfly:"🦋", ant:"🐜", spider:"🕷️",
+  whale:"🐋", dolphin:"🐬", shark:"🦈", octopus:"🐙",
+  penguin:"🐧", eagle:"🦅", owl:"🦉", parrot:"🦜",
+  dinosaur:"🦕", unicorn:"🦄",
+  worm:"🪱", bug:"🐛",
+  animal:"🐾", pet:"🐾",
+  panda:"🐼", koala:"🐨", kangaroo:"🦘",
+  crocodile:"🐊", camel:"🐪", llama:"🦙",
+
+  // Nature
+  sun:"☀️", sunny:"☀️", sunshine:"☀️",
+  moon:"🌙",
+  star:"⭐",
+  cloud:"☁️",
+  rain:"🌧️", drizzle:"🌦️",
+  snow:"❄️", blizzard:"🌨️",
+  wind:"💨", breeze:"🌬️",
+  thunder:"⛈️", storm:"⛈️", lightning:"⚡",
+  rainbow:"🌈",
+  fog:"🌫️", mist:"🌫️",
+  hot:"🔥", heat:"🔥", warm:"🌡️",
+  cold:"🥶",
+  ice:"🧊",
+  fire:"🔥", flame:"🔥",
+  water:"💧",
+  ocean:"🌊", sea:"🌊", wave:"🌊",
+  river:"🏞️", lake:"🏞️",
+  earth:"🌍", world:"🌍",
+  mountain:"⛰️", hill:"🌄",
+  volcano:"🌋",
+  tree:"🌳", forest:"🌲", jungle:"🌴",
+  flower:"🌸", rose:"🌹", sunflower:"🌻",
+  grass:"🌿", leaf:"🍃", plant:"🌱",
+  garden:"🌻", field:"🌾",
+  desert:"🏜️", sand:"🏖️",
+  beach:"🏖️", island:"🏝️",
+  sky:"🌤️",
+  space:"🌌", universe:"🌌", galaxy:"🌌",
+  planet:"🪐",
+  asteroid:"☄️", comet:"☄️",
+  rock:"🪨", stone:"🪨",
+  cave:"🕳️",
+
+  // Food & drink
+  apple:"🍎", orange:"🍊", banana:"🍌", grape:"🍇",
+  strawberry:"🍓", watermelon:"🍉", peach:"🍑",
+  lemon:"🍋", pineapple:"🍍", mango:"🥭",
+  cherry:"🍒", tomato:"🍅", avocado:"🥑",
+  bread:"🍞", cake:"🎂", cookie:"🍪", candy:"🍬",
+  chocolate:"🍫", donut:"🍩", pie:"🥧",
+  pizza:"🍕", burger:"🍔", sandwich:"🥪", hotdog:"🌭",
+  taco:"🌮", burrito:"🌯",
+  sushi:"🍣", ramen:"🍜", pasta:"🍝",
+  rice:"🍚", egg:"🥚", cheese:"🧀",
+  meat:"🥩", bacon:"🥓",
+  salad:"🥗", soup:"🍲",
+  coffee:"☕", tea:"🍵", juice:"🧃", milk:"🥛",
+  beer:"🍺", wine:"🍷", champagne:"🥂",
+  popcorn:"🍿",
+  breakfast:"🍳", lunch:"🥪", dinner:"🍽️",
+  meal:"🍽️", fruit:"🍎", vegetable:"🥦",
+  spicy:"🌶️", sweet:"🍬", sour:"🍋", salty:"🧂",
+  delicious:"😋", yummy:"😋", tasty:"😋",
+  hungry:"🤤", thirsty:"🥤",
+
+  // Objects & tech
+  phone:"📱", mobile:"📱", telephone:"📞",
+  computer:"💻", laptop:"💻",
+  internet:"🌐", email:"📧", message:"💬",
+  camera:"📷", video:"🎥",
+  television:"📺", tv:"📺", radio:"📻",
+  car:"🚗", truck:"🚛", bus:"🚌", train:"🚂", plane:"✈️", boat:"⛵", ship:"🚢",
+  bicycle:"🚲", motorcycle:"🏍️", rocket:"🚀",
+  house:"🏠", home:"🏠",
+  building:"🏢", hospital:"🏥", school:"🏫", church:"⛪", castle:"🏰",
+  book:"📚", pen:"🖊️", pencil:"✏️", paper:"📄",
+  money:"💰", coin:"🪙", bank:"🏦",
+  clock:"🕐", calendar:"📅",
+  key:"🔑", lock:"🔒", door:"🚪",
+  music:"🎵", song:"🎵", guitar:"🎸", piano:"🎹", drum:"🥁",
+  gift:"🎁", party:"🎉", birthday:"🎂",
+  flag:"🚩", map:"🗺️",
+  medicine:"💊", injection:"💉",
+  bag:"👜", backpack:"🎒", suitcase:"🧳",
+  shirt:"👕", pants:"👖", dress:"👗", hat:"🎩", shoes:"👟",
+  ring:"💍", crown:"👑", glasses:"👓",
+  hammer:"🔨", knife:"🔪",
+  robot:"🤖",
+  light:"💡", candle:"🕯️",
+  trophy:"🏆", medal:"🥇",
+  paint:"🎨",
+  game:"🎮",
+  chess:"♟️",
+  ball:"⚽",
+  toy:"🧸",
+  umbrella:"☂️",
+  chair:"🪑",
+  box:"📦",
+  diamond:"💎", gold:"🪙",
+  bomb:"💣",
+
+  // Places
+  city:"🏙️", town:"🏘️", village:"🏡", country:"🌍",
+  park:"🌳", zoo:"🦁", museum:"🏛️", library:"📚",
+  restaurant:"🍽️", hotel:"🏨", store:"🏪", market:"🛒",
+  airport:"✈️", station:"🚂",
+  road:"🛣️", bridge:"🌉",
+  factory:"🏭", farm:"🌾",
+  prison:"⛓️", temple:"⛩️", mosque:"🕌",
+  theater:"🎭", stadium:"🏟️",
+  gym:"💪", office:"🏢",
+
+  // Time
+  time:"⏰",
+  today:"📅", tomorrow:"📅", yesterday:"📅",
+  morning:"🌅", afternoon:"☀️", evening:"🌆", night:"🌙", midnight:"🌑",
+  now:"⏰", soon:"⏳", late:"⏰", early:"⏰",
+  always:"♾️", never:"🚫", sometimes:"🔄",
+  day:"☀️", week:"📆", month:"📅", year:"📅", century:"📅",
+  past:"⏪", future:"⏩", present:"⏰",
+  deadline:"⏰",
+
+  // Abstract
+  idea:"💡", dream:"💭", hope:"🌟", wish:"⭐",
+  truth:"⚖️", lie:"🤥",
+  life:"❤️", death:"💀",
+  war:"⚔️", peace:"☮️", battle:"⚔️",
+  victory:"🏆", defeat:"😞",
+  freedom:"🦅", justice:"⚖️", law:"⚖️",
+  power:"⚡", energy:"⚡",
+  magic:"✨", mystery:"🔮",
+  religion:"✝️", god:"🙏", prayer:"🙏", faith:"🙏",
+  science:"🔬", technology:"⚙️", experiment:"🧪",
+  nature:"🌿", environment:"🌍", ecology:"♻️",
+  virus:"🦠", disease:"🤒",
+  health:"💪",
+  wealth:"💰", poverty:"😔", success:"🏆", failure:"❌",
+  problem:"⚠️", solution:"💡",
+  danger:"⚠️", secret:"🤫",
+  revolution:"🌀",
+  knowledge:"🧠", wisdom:"🦉", education:"🎓",
+  art:"🎨", culture:"🎭",
+  language:"🗣️", story:"📖",
+  memory:"💭",
+  heart:"❤️", soul:"✨", mind:"🧠",
+  blood:"🩸", pain:"🤕",
+  news:"📰", history:"📜",
+  luck:"🍀", fate:"🔮",
+  infinity:"♾️",
+
+  // Descriptors
+  big:"⬆️", large:"⬆️", huge:"⬆️",
+  small:"⬇️", little:"⬇️", tiny:"🔬",
+  long:"↔️", short:"↔️", tall:"🏔️",
+  fast:"⚡", quick:"⚡", slow:"🐢",
+  good:"👍", better:"👍", best:"🌟",
+  bad:"👎", worse:"👎", worst:"💀",
+  beautiful:"✨", pretty:"✨", gorgeous:"😍",
+  ugly:"😣",
+  strong:"💪", weak:"😔",
+  rich:"💰", poor:"😔",
+  new:"✨", fresh:"🌱", old:"👴", young:"👶",
+  true:"✅", right:"✅", false:"❌", wrong:"❌",
+  easy:"😌", difficult:"😤",
+  important:"❗", special:"⭐",
+  free:"🆓", busy:"🏃",
+  safe:"🛡️", dangerous:"⚠️",
+  quiet:"🤫", loud:"📢",
+  dark:"🌑", bright:"☀️",
+  clean:"✨", dirty:"🗑️",
+  alive:"❤️",
+  together:"🤝",
+
+  // Numbers
+  one:"1️⃣", two:"2️⃣", three:"3️⃣", four:"4️⃣", five:"5️⃣",
+  six:"6️⃣", seven:"7️⃣", eight:"8️⃣", nine:"9️⃣", ten:"🔟",
+  hundred:"💯",
+  first:"🥇", second:"🥈", third:"🥉",
+  half:"➗",
+
+  // Connectors / particles
+  and:"➕", or:"🔀", but:"⚡", because:"💡",
+  so:"➡️", then:"➡️", when:"⏰",
+  with:"🤝", without:"🚫",
+  not:"🚫",
+  very:"❗", really:"❗", much:"⬆️", more:"➕",
+  less:"➖", also:"➕",
+};
+
+// Stop words — silently dropped
+const STOP = new Set([
+  "a","an","the","in","on","at","of","to","from","by","for","into","onto","upon",
+  "via","as","is","are","was","were","be","been","being","have","has","had",
+  "do","does","did","will","would","could","should","may","might","shall","can","must",
+  "i","me","my","myself","you","your","yours","yourself",
+  "he","him","his","she","her","hers","it","its",
+  "we","our","us","they","their","them",
+  "this","that","these","those",
+  "what","which","who","whom","whose","how","where","why",
+  "just","even","still","already","again","about","around","between","against",
+]);
+
+// ── Stemming (simple) ────────────────────────────────────────────────────────
+function stem(raw) {
+  const w = raw.toLowerCase().replace(/['']/g, "'").replace(/[^a-z']/g, "");
+  if (!w) return null;
+  if (WORDS[w]) return w;
+
+  const strip = (suffix, minLen = 3) => w.length > minLen + suffix.length ? w.slice(0, -suffix.length) : null;
+
+  // -ing
+  if (w.endsWith("ing") && w.length > 6) {
+    const b = w.slice(0, -3);
+    if (WORDS[b]) return b;
+    if (WORDS[b + "e"]) return b + "e";
+    if (b.length > 2 && b[b.length - 1] === b[b.length - 2] && WORDS[b.slice(0, -1)]) return b.slice(0, -1);
+  }
+  // -ed
+  if (w.endsWith("ed") && w.length > 5) {
+    const b = w.slice(0, -2);
+    if (WORDS[b]) return b;
+    if (WORDS[b + "e"]) return b + "e";
+    if (b.length > 2 && b[b.length - 1] === b[b.length - 2] && WORDS[b.slice(0, -1)]) return b.slice(0, -1);
+  }
+  // -es
+  if (w.endsWith("ies") && w.length > 5) {
+    const b = w.slice(0, -3) + "y";
+    if (WORDS[b]) return b;
+  }
+  if (w.endsWith("es") && w.length > 4 && WORDS[w.slice(0, -2)]) return w.slice(0, -2);
+  // -s
+  if (w.endsWith("s") && w.length > 3 && WORDS[w.slice(0, -1)]) return w.slice(0, -1);
+  // -ly
+  if (w.endsWith("ly") && w.length > 4 && WORDS[w.slice(0, -2)]) return w.slice(0, -2);
+  // -er / -est
+  if (w.endsWith("er") && w.length > 4 && WORDS[w.slice(0, -2)]) return w.slice(0, -2);
+  if (w.endsWith("est") && w.length > 5 && WORDS[w.slice(0, -3)]) return w.slice(0, -3);
+  // -tion / -sion → verb base approximation
+  if (w.endsWith("tion") && w.length > 6 && WORDS[w.slice(0, -4) + "te"]) return w.slice(0, -4) + "te";
+
+  return null;
+}
+
+// ── Core: English text → emoji string ───────────────────────────────────────
+function toEmoji(englishText) {
+  let text = englishText.toLowerCase();
+  const placeholders = {};
+
+  // Replace known phrases first (longest-first)
+  const sortedPhrases = Object.keys(PHRASES).sort((a, b) => b.length - a.length);
+  sortedPhrases.forEach((phrase, i) => {
+    const re = new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+    if (re.test(text)) {
+      const ph = `\x00${i}\x00`;
+      placeholders[ph] = PHRASES[phrase];
+      text = text.replace(re, ` ${ph} `);
+    }
+  });
+
+  // Tokenise and convert remaining words
+  const tokens = text.split(/\s+/).filter(Boolean);
+  const result = [];
+
+  for (const token of tokens) {
+    if (placeholders[token]) {
+      result.push(placeholders[token]);
+      continue;
+    }
+    const key = stem(token);
+    if (key) {
+      result.push(WORDS[key]);
+    } else {
+      const plain = token.replace(/[^a-z]/g, "");
+      if (plain && !STOP.has(plain)) {
+        result.push("❓"); // unknown meaningful word
+      }
+    }
+  }
+
+  return result.join("  ") || "🤷";
+}
+
+// ── MyMemory API ─────────────────────────────────────────────────────────────
+async function translateToEnglish(text, lang) {
+  if (lang === "en") return text;
+  const url =
+    `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${encodeURIComponent(lang)}|en`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const json = await res.json();
+  // responseStatus 200 = success; 429 = rate-limited
+  if (json.responseStatus !== 200 && json.responseStatus !== "200") {
+    throw new Error(json.responseDetails || "Translation API error");
+  }
+  return json.responseData.translatedText;
+}
+
+// ── UI ────────────────────────────────────────────────────────────────────────
+let debounce = null;
+
+document.getElementById("inputText").addEventListener("input", () => {
+  const val = document.getElementById("inputText").value;
+  document.getElementById("charCount").textContent = `${val.length} / 500`;
+  clearTimeout(debounce);
+  if (!val.trim()) {
+    showPlaceholder();
+    return;
+  }
+  debounce = setTimeout(runTranslate, 550);
+});
+
+document.getElementById("sourceLang").addEventListener("change", () => {
+  if (document.getElementById("inputText").value.trim()) runTranslate();
+});
+
+async function runTranslate() {
+  const text = document.getElementById("inputText").value.trim();
+  if (!text) return;
+  const lang = document.getElementById("sourceLang").value;
+
+  showLoading();
+
+  try {
+    const english = await translateToEnglish(text, lang);
+    const emojis = toEmoji(english);
+    showOutput(emojis);
+  } catch {
+    showError("⚠️ Translation failed — check your connection.");
+  }
+}
+
+function showPlaceholder() {
+  const el = document.getElementById("outputBox");
+  el.className = "output-box placeholder-state";
+  el.textContent = "Translation will appear here…";
+  document.getElementById("emojiCount").textContent = "";
+}
+
+function showLoading() {
+  const el = document.getElementById("outputBox");
+  el.className = "output-box loading-state";
+  el.innerHTML = `<div class="spinner"></div> Translating…`;
+  document.getElementById("emojiCount").textContent = "";
+}
+
+function showOutput(text) {
+  const el = document.getElementById("outputBox");
+  el.className = "output-box";
+  el.textContent = text;
+  document.getElementById("emojiCount").textContent = `${[...text].length} symbols`;
+}
+
+function showError(msg) {
+  const el = document.getElementById("outputBox");
+  el.className = "output-box";
+  el.style.color = "#d93025";
+  el.style.fontSize = "0.9rem";
+  el.textContent = msg;
+  setTimeout(() => { el.style.color = ""; el.style.fontSize = ""; }, 3000);
+}
+
+function clearInput() {
+  document.getElementById("inputText").value = "";
+  document.getElementById("charCount").textContent = "0 / 500";
+  showPlaceholder();
+}
+
+function copyOutput() {
+  const text = document.getElementById("outputBox").textContent;
+  if (!text || document.getElementById("outputBox").classList.contains("placeholder-state")) return;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector("[onclick='copyOutput()']");
+    const orig = btn.textContent;
+    btn.textContent = "✅ Copied!";
+    setTimeout(() => { btn.textContent = orig; }, 1600);
+  });
+}
+</script>
+</body>
+</html>
