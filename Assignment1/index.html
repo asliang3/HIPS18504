@@ -657,6 +657,57 @@ const WORDS = {
   very:"❗", really:"❗", much:"⬆️", more:"➕",
   less:"➖", also:"➕",
 
+  // Common verbs often missed
+  like:"😊", likes:"😊", liked:"😊", enjoy:"😊", enjoys:"😊",
+  want:"🫳", wants:"🫳",
+  need:"❗", needs:"❗",
+  get:"✋", gets:"✋", got:"✋",
+  put:"📥", set:"📌",
+  let:"✔️",
+  try:"🔄", tries:"🔄", tried:"🔄",
+  look:"👀", looks:"👀",
+  feel:"🤲", feels:"🤲", felt:"🤲",
+  seem:"🤔", seems:"🤔",
+  turn:"🔄", turns:"🔄",
+  keep:"✊", keeps:"✊", kept:"✊",
+  bring:"📦", brought:"📦",
+  become:"🔄", became:"🔄",
+  happen:"⚡", happens:"⚡",
+  live:"🏠", lives:"🏠",
+  wonder:"❓", wonders:"❓",
+  miss:"😔", care:"❤️",
+  hate:"💔",
+  prefer:"👍",
+  believe:"🤲",
+  understand:"💡",
+  remember:"💭",
+  forget:"🌫️",
+  eat:"🍽️",
+  drink:"🥤",
+  wear:"👕",
+  carry:"🎒",
+  visit:"🗺️",
+  watch:"📺",
+  hear:"👂",
+  lose:"😞",
+  lost:"😞",
+  found:"🔍",
+  made:"🔨",
+  said:"💬",
+  came:"👉",
+  went:"🚶",
+  saw:"👁️",
+  knew:"🧠",
+  told:"💬",
+  asked:"❓",
+  gave:"🎁",
+  left:"🚪",
+  met:"🤝",
+  took:"✋",
+  sent:"📤",
+  show:"👉",
+  love:"❤️",
+
   // Question words
   where:"📍❓", what:"❓", who:"👤❓", why:"🤔", how:"🔧❓", which:"🔀",
 
@@ -765,10 +816,7 @@ function toEmoji(englishText) {
     if (key) {
       result.push(WORDS[key]);
     } else {
-      const plain = token.replace(/[^a-z]/g, "");
-      if (plain && !STOP.has(plain)) {
-        result.push("❓"); // unknown meaningful word
-      }
+      // silently skip unrecognised words
     }
   }
 
