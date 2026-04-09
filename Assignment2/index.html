@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fibonacci Turing Machine — Double Tape</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Google Sans', 'Segoe UI', Roboto, Arial, sans-serif;
+      background: #f8f9fa;
+      color: #202124;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: #fff;
+      border-bottom: 1px solid #dadce0;
+      padding: 0 24px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .header-icon { font-size: 1.6rem; }
+    .header-text h1 { font-size: 1.15rem; font-weight: 500; color: #202124; }
+    .header-text p { font-size: 0.75rem; color: #5f6368; }
+
+    /* ── Main ── */
+    main {
+      max-width: 1100px;
+      margin: 24px auto;
+      padding: 0 16px;
+    }
+
+    .info-banner {
+      background: #e8f0fe;
+      border: 1px solid #c5d5f8;
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 24px;
+      font-size: 0.88rem;
+      line-height: 1.6;
+      color: #174ea6;
+    }
+
+    /* ── Controls ── */
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .controls button {
+      background: #1a73e8;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 22px;
+      font-size: 0.88rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .controls button:hover { background: #1557b0; }
+    .controls button:disabled { background: #a0c4ff; cursor: default; }
+    .controls button.secondary {
+      background: #fff;
+      color: #1a73e8;
+      border: 1px solid #dadce0;
+    }
+    .controls button.secondary:hover { background: #e8f0fe; }
+    .controls button.secondary:disabled { color: #a0c4ff; border-color: #e8eaed; background: #fff; }
+    .controls button.danger {
+      background: #fff;
+      color: #d93025;
+      border: 1px solid #dadce0;
+    }
+    .controls button.danger:hover { background: #fce8e6; }
+
+    .speed-label {
+      font-size: 0.82rem;
+      color: #5f6368;
+      margin-left: 8px;
+    }
+    .speed-slider {
+      width: 120px;
+      accent-color: #1a73e8;
+    }
+
+    /* ── State diagram ── */
+    .section-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: #202124;
+    }
+
+    .state-diagram {
+      background: #fff;
+      border: 1px solid #dadce0;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 24px;
+      overflow-x: auto;
+    }
+
+    .state-flow {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-wrap: wrap;
+      min-height: 56px;
+    }
+
+    .state-node {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 2px solid #dadce0;
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: #5f6368;
+      background: #fff;
+      transition: all 0.2s;
+      padding: 0 6px;
+      flex-shrink: 0;
+    }
+    .state-node.active {
+      border-color: #1a73e8;
+      background: #e8f0fe;
+      color: #1a73e8;
+      box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.2);
+      transform: scale(1.15);
+    }
+    .state-node.halt {
+      border-style: double;
+      border-width: 4px;
+    }
+
+    .state-arrow {
+      color: #dadce0;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+
+    /* ── Tape ── */
+    .tape-container {
+      background: #fff;
+      border: 1px solid #dadce0;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      overflow-x: auto;
+    }
+    .tape-label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #5f6368;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .tape {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      min-height: 52px;
+    }
+    .tape-cell {
+      width: 36px;
+      height: 42px;
+      border: 1px solid #dadce0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Roboto Mono', 'SF Mono', 'Consolas', monospace;
+      font-size: 0.88rem;
+      font-weight: 500;
+      background: #fff;
+      color: #202124;
+      transition: all 0.15s;
+      flex-shrink: 0;
+      position: relative;
+    }
+    .tape-cell + .tape-cell { border-left: none; }
+    .tape-cell.head {
+      background: #1a73e8;
+      color: #fff;
+      border-color: #1a73e8;
+      font-weight: 700;
+      box-shadow: 0 2px 8px rgba(26, 115, 232, 0.35);
+      z-index: 2;
+      transform: scaleY(1.12);
+    }
+    .tape-cell.blank { color: #bbb; }
+    .tape-cell.separator {
+      background: #f1f3f4;
+      border-color: #e0e0e0;
+      width: 12px;
+      font-size: 0.6rem;
+      color: #9aa0a6;
+    }
+
+    /* Head pointer triangle */
+    .head-pointer {
+      position: relative;
+    }
+    .head-pointer::after {
+      content: '▲';
+      position: absolute;
+      bottom: -18px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.75rem;
+      color: #1a73e8;
+    }
+
+    /* ── Output panel ── */
+    .output-panel {
+      background: #fff;
+      border: 1px solid #dadce0;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+    .output-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .output-item {
+      background: #f8f9fa;
+      border: 1px solid #e8eaed;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.85rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .output-item .fib-index { color: #5f6368; font-weight: 500; }
+    .output-item .fib-binary {
+      font-family: 'Roboto Mono', 'SF Mono', monospace;
+      font-size: 0.78rem;
+      color: #1a73e8;
+    }
+    .output-item .fib-decimal { font-weight: 600; }
+
+    /* ── Step log ── */
+    .step-log {
+      background: #fff;
+      border: 1px solid #dadce0;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 24px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .step-log-entry {
+      font-family: 'Roboto Mono', 'SF Mono', monospace;
+      font-size: 0.75rem;
+      color: #5f6368;
+      padding: 2px 0;
+      border-bottom: 1px solid #f1f3f4;
+    }
+    .step-log-entry:last-child { border-bottom: none; }
+    .step-log-entry .log-state { color: #1a73e8; font-weight: 600; }
+    .step-log-entry .log-action { color: #188038; }
+
+    /* ── Status bar ── */
+    .status-bar {
+      display: flex;
+      gap: 24px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .status-item {
+      font-size: 0.85rem;
+      color: #5f6368;
+    }
+    .status-item strong {
+      color: #202124;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-icon">🔢</div>
+  <div class="header-text">
+    <h1>Fibonacci Turing Machine</h1>
+    <p>Double-tape TM generating Fibonacci numbers in 16-bit binary</p>
+  </div>
+</header>
+
+<main>
+  <div class="info-banner">
+    <strong>How it works:</strong> A double-tape Turing machine computes Fibonacci numbers via binary addition.
+    <strong>Tape 1 (Work Tape)</strong> holds two 16-bit numbers (A and B) and performs A + B → result.
+    <strong>Tape 2 (Output Tape)</strong> stores each generated Fibonacci number.
+    Values are capped at 16 bits (max F(24) = 46368). Use <em>Step</em> to advance one instruction, or <em>Run</em> for continuous execution.
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <button id="btnStep" onclick="step()">Step</button>
+    <button id="btnRun" onclick="toggleRun()">Run</button>
+    <button id="btnReset" class="secondary" onclick="reset()">Reset</button>
+    <span class="speed-label">Speed:</span>
+    <input type="range" class="speed-slider" id="speedSlider" min="50" max="1000" value="250" step="50" />
+    <span class="speed-label" id="speedDisplay">250 ms</span>
+  </div>
+
+  <!-- Status -->
+  <div class="status-bar">
+    <div class="status-item">State: <strong id="statusState">INIT</strong></div>
+    <div class="status-item">Step: <strong id="statusStep">0</strong></div>
+    <div class="status-item">Fib Count: <strong id="statusFibCount">0</strong></div>
+    <div class="status-item">Status: <strong id="statusRunning">Idle</strong></div>
+  </div>
+
+  <!-- State diagram -->
+  <div class="section-title">State Diagram</div>
+  <div class="state-diagram">
+    <div class="state-flow" id="stateFlow"></div>
+  </div>
+
+  <!-- Tape 1: Work tape -->
+  <div class="tape-container">
+    <div class="tape-label">Tape 1 — Work Tape (A | B | Carry)</div>
+    <div class="tape" id="tape1"></div>
+  </div>
+
+  <!-- Tape 2: Output tape -->
+  <div class="tape-container">
+    <div class="tape-label">Tape 2 — Output Tape (Fibonacci numbers, 16-bit each)</div>
+    <div class="tape" id="tape2"></div>
+  </div>
+
+  <!-- Fibonacci output -->
+  <div class="output-panel">
+    <div class="section-title">Generated Fibonacci Numbers</div>
+    <div class="output-grid" id="outputGrid"></div>
+  </div>
+
+  <!-- Step log -->
+  <div class="section-title">Instruction Log</div>
+  <div class="step-log" id="stepLog"></div>
+</main>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+//  FIBONACCI DOUBLE-TAPE TURING MACHINE
+//
+//  Tape 1 (work): [ A (16 bits) ][ B (16 bits) ][ carry (1 bit) ]
+//    Indices:       0..15            16..31          32
+//    A = previous fib, B = current fib (LSB at index 0, MSB at index 15)
+//
+//  Tape 2 (output): Concatenated 16-bit Fibonacci numbers
+//    Each fib stored MSB-first for display, appended left-to-right
+//
+//  States:
+//    INIT         — Load initial values (F0=0, F1=1)
+//    COPY_B_OUT   — Copy B to output tape (as MSB-first 16-bit)
+//    ADD_SETUP    — Position head for binary addition
+//    ADD_BIT      — Read A[i] and B[i], compute sum+carry
+//    WRITE_SUM    — Write sum bit to A[i] (A ← A+B)
+//    ADVANCE      — Move to next bit position
+//    SHIFT        — Copy new A to B (B ← old A+B), old B to A
+//    SHIFT_COPY   — Do the copy bit by bit
+//    OVERFLOW_CHK — Check if result overflows 16 bits
+//    HALT         — Done (overflow or F(24) reached)
+// ══════════════════════════════════════════════════════════════
+
+const BITS = 16;
+const TAPE1_SIZE = 33;  // 16 + 16 + 1 carry
+const MAX_FIB_COUNT = 25; // F(0)..F(24)
+
+// All TM states in order for the diagram
+const ALL_STATES = [
+  'INIT', 'COPY_B_OUT', 'ADD_SETUP', 'ADD_BIT',
+  'WRITE_SUM', 'ADVANCE', 'COPY_A_TO_TEMP',
+  'COPY_B_TO_A', 'COPY_TEMP_TO_B', 'OVERFLOW_CHK', 'HALT'
+];
+
+const STATE_LABELS = {
+  'INIT': 'INIT',
+  'COPY_B_OUT': 'COPY→OUT',
+  'ADD_SETUP': 'ADD_SET',
+  'ADD_BIT': 'ADD_BIT',
+  'WRITE_SUM': 'WR_SUM',
+  'ADVANCE': 'ADVANCE',
+  'COPY_A_TO_TEMP': 'A→TMP',
+  'COPY_B_TO_A': 'B→A',
+  'COPY_TEMP_TO_B': 'TMP→B',
+  'OVERFLOW_CHK': 'OVF_CHK',
+  'HALT': 'HALT'
+};
+
+// ── Machine state ──
+let tm = {};
+
+function initMachine() {
+  tm = {
+    state: 'INIT',
+    tape1: new Array(TAPE1_SIZE).fill(0),  // work tape
+    tape2: [],                               // output tape
+    head1: 0,                                // tape 1 head position
+    head2: 0,                                // tape 2 head position
+    stepCount: 0,
+    fibCount: 0,
+    halted: false,
+    // Sub-state variables
+    initPhase: 0,        // tracks INIT sub-steps
+    copyBitIdx: 0,       // for COPY_B_OUT
+    addBitIdx: 0,        // current bit index for addition
+    carry: 0,
+    tempReg: new Array(BITS).fill(0),  // temp storage for shift
+    shiftIdx: 0,         // index for shift copy operations
+    fibNumbers: [],      // collected output numbers
+    logEntries: [],
+  };
+}
+
+// ── Encode number to 16-bit LSB-first array ──
+function toLSB16(n) {
+  const bits = [];
+  for (let i = 0; i < BITS; i++) {
+    bits.push((n >> i) & 1);
+  }
+  return bits;
+}
+
+// ── Decode LSB-first 16 bits from tape1 at offset ──
+function readNum(offset) {
+  let val = 0;
+  for (let i = 0; i < BITS; i++) {
+    val |= (tm.tape1[offset + i] << i);
+  }
+  return val;
+}
+
+// ── One step of the Turing machine ──
+function tmStep() {
+  if (tm.halted) return;
+
+  tm.stepCount++;
+  const prevState = tm.state;
+  let action = '';
+
+  switch (tm.state) {
+    case 'INIT': {
+      // Phase 0: Write F(0)=0 into A (bits 0..15) — already all 0
+      // Phase 1: Write F(1)=1 into B (bit 16 = 1, rest 0)
+      // Phase 2: Output F(0) to tape 2
+      // Phase 3: Transition to COPY_B_OUT for F(1)
+      if (tm.initPhase === 0) {
+        // A is already 0. Set head to show we're at A.
+        tm.head1 = 0;
+        action = 'Initialize A = 0 (F₀)';
+        tm.initPhase = 1;
+      } else if (tm.initPhase === 1) {
+        // Write 1 to B[0] (LSB of B at index 16)
+        tm.tape1[16] = 1;
+        tm.head1 = 16;
+        action = 'Initialize B = 1 (F₁), write B[0] = 1';
+        tm.initPhase = 2;
+      } else if (tm.initPhase === 2) {
+        // Output F(0) = 0 to tape 2 (16 bits MSB-first)
+        for (let i = BITS - 1; i >= 0; i--) {
+          tm.tape2.push(tm.tape1[0 + i]);  // A bits MSB-first
+        }
+        tm.head2 = 0;
+        tm.fibCount = 1;
+        tm.fibNumbers.push(0);
+        action = 'Output F(0) = 0 → Tape 2';
+        tm.initPhase = 3;
+      } else if (tm.initPhase === 3) {
+        // Now output F(1) via COPY_B_OUT
+        tm.copyBitIdx = BITS - 1;  // start from MSB
+        tm.state = 'COPY_B_OUT';
+        tm.head1 = 16 + tm.copyBitIdx;
+        tm.head2 = tm.tape2.length;
+        action = 'Begin copying B (F₁) to output';
+      }
+      break;
+    }
+
+    case 'COPY_B_OUT': {
+      // Copy B to tape2, one bit at a time, MSB first
+      const bitIdx = tm.copyBitIdx;
+      const bit = tm.tape1[16 + bitIdx];
+      tm.tape2.push(bit);
+      tm.head1 = 16 + bitIdx;
+      tm.head2 = tm.tape2.length - 1;
+      action = `Copy B[${bitIdx}] = ${bit} → Output[${tm.head2}]`;
+
+      tm.copyBitIdx--;
+      if (tm.copyBitIdx < 0) {
+        // Done copying this Fibonacci number
+        const val = readNum(16);
+        tm.fibNumbers.push(val);
+        tm.fibCount++;
+        action += ` | Stored F(${tm.fibCount - 1}) = ${val}`;
+
+        if (tm.fibCount >= MAX_FIB_COUNT) {
+          tm.state = 'HALT';
+          action += ' | Max count reached!';
+        } else {
+          tm.state = 'ADD_SETUP';
+        }
+      }
+      break;
+    }
+
+    case 'ADD_SETUP': {
+      // Prepare for binary addition: A ← A + B
+      tm.addBitIdx = 0;
+      tm.carry = 0;
+      tm.tape1[32] = 0;  // clear carry cell
+      tm.head1 = 32;
+      action = 'Clear carry, prepare addition A ← A + B';
+      tm.state = 'ADD_BIT';
+      break;
+    }
+
+    case 'ADD_BIT': {
+      // Read A[i] and B[i]
+      const i = tm.addBitIdx;
+      const a = tm.tape1[i];
+      const b = tm.tape1[16 + i];
+      const sum = a + b + tm.carry;
+      const resultBit = sum & 1;
+      tm.carry = (sum >> 1) & 1;
+      tm.tape1[32] = tm.carry;
+
+      tm.head1 = i; // show head at A[i]
+      action = `Add bit[${i}]: A=${a} + B=${b} + carry → sum=${resultBit}, carry=${tm.carry}`;
+
+      // Store result bit temporarily
+      tm._pendingSumBit = resultBit;
+      tm._pendingBitIdx = i;
+      tm.state = 'WRITE_SUM';
+      break;
+    }
+
+    case 'WRITE_SUM': {
+      // Write sum bit to temp register (we'll use tempReg to avoid overwriting A during addition)
+      const i = tm._pendingBitIdx;
+      tm.tempReg[i] = tm._pendingSumBit;
+      tm.head1 = i;
+      action = `Write sum bit[${i}] = ${tm._pendingSumBit} to temp`;
+      tm.state = 'ADVANCE';
+      break;
+    }
+
+    case 'ADVANCE': {
+      tm.addBitIdx++;
+      if (tm.addBitIdx < BITS) {
+        tm.head1 = tm.addBitIdx;
+        action = `Advance to bit[${tm.addBitIdx}]`;
+        tm.state = 'ADD_BIT';
+      } else {
+        // Addition complete. Now shift: old_B → A, Sum → B
+        // Step 1: Copy A (old A) → not needed, we need old B → A
+        // Actually: temp has A+B. We want A←old_B, B←A+B (=temp)
+        // So: copy B → A, copy temp → B
+        tm.shiftIdx = 0;
+        tm.head1 = 0;
+        action = 'Addition complete. Begin shift: B→A, Sum→B';
+        tm.state = 'COPY_B_TO_A';
+      }
+      break;
+    }
+
+    case 'COPY_B_TO_A': {
+      const i = tm.shiftIdx;
+      tm.tape1[i] = tm.tape1[16 + i];
+      tm.head1 = i;
+      action = `Copy B[${i}]=${tm.tape1[i]} → A[${i}]`;
+      tm.shiftIdx++;
+      if (tm.shiftIdx >= BITS) {
+        tm.shiftIdx = 0;
+        tm.state = 'COPY_TEMP_TO_B';
+      }
+      break;
+    }
+
+    case 'COPY_TEMP_TO_B': {
+      const i = tm.shiftIdx;
+      tm.tape1[16 + i] = tm.tempReg[i];
+      tm.head1 = 16 + i;
+      action = `Copy temp[${i}]=${tm.tempReg[i]} → B[${i}]`;
+      tm.shiftIdx++;
+      if (tm.shiftIdx >= BITS) {
+        tm.state = 'OVERFLOW_CHK';
+      }
+      break;
+    }
+
+    case 'OVERFLOW_CHK': {
+      // Check if the new B (sum) overflowed (carry bit still set after last add)
+      // Actually check if the number makes sense
+      const newB = readNum(16);
+      tm.head1 = 16;
+      if (newB > 65535 || (tm.carry === 1 && tm.addBitIdx >= BITS)) {
+        action = `Overflow detected! B = ${newB}`;
+        tm.state = 'HALT';
+      } else {
+        action = `No overflow. New B = ${newB}. Copy to output.`;
+        tm.copyBitIdx = BITS - 1;
+        tm.state = 'COPY_B_OUT';
+      }
+      break;
+    }
+
+    case 'HALT': {
+      tm.halted = true;
+      action = 'Machine halted.';
+      break;
+    }
+  }
+
+  // Log entry
+  const entry = `Step ${tm.stepCount}: [${prevState}→${tm.state}] ${action}`;
+  tm.logEntries.push(entry);
+
+  render();
+}
+
+// ══════════════════════════════════════════════════════════════
+//  RENDERING
+// ══════════════════════════════════════════════════════════════
+
+function render() {
+  renderStates();
+  renderTape1();
+  renderTape2();
+  renderOutput();
+  renderLog();
+  renderStatus();
+}
+
+function renderStates() {
+  const container = document.getElementById('stateFlow');
+  container.innerHTML = '';
+  ALL_STATES.forEach((s, idx) => {
+    if (idx > 0) {
+      const arrow = document.createElement('span');
+      arrow.className = 'state-arrow';
+      arrow.textContent = '→';
+      container.appendChild(arrow);
+    }
+    const node = document.createElement('div');
+    node.className = 'state-node' + (s === tm.state ? ' active' : '') + (s === 'HALT' ? ' halt' : '');
+    node.textContent = STATE_LABELS[s] || s;
+    container.appendChild(node);
+  });
+}
+
+function renderTape1() {
+  const container = document.getElementById('tape1');
+  container.innerHTML = '';
+
+  // Section: A bits (0..15), separator, B bits (16..31), separator, carry (32)
+  const sections = [
+    { label: 'A', start: 0, end: BITS },
+    { label: 'B', start: BITS, end: 2 * BITS },
+    { label: 'C', start: 2 * BITS, end: TAPE1_SIZE }
+  ];
+
+  sections.forEach((sec, secIdx) => {
+    if (secIdx > 0) {
+      const sep = document.createElement('div');
+      sep.className = 'tape-cell separator';
+      sep.textContent = '|';
+      container.appendChild(sep);
+    }
+    for (let i = sec.start; i < sec.end; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'tape-cell';
+      if (i === tm.head1) {
+        cell.classList.add('head');
+      }
+      const val = tm.tape1[i];
+      cell.textContent = val;
+      if (val === 0) cell.classList.add('blank');
+      container.appendChild(cell);
+    }
+  });
+}
+
+function renderTape2() {
+  const container = document.getElementById('tape2');
+  container.innerHTML = '';
+
+  if (tm.tape2.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'tape-cell blank';
+    empty.textContent = '∅';
+    container.appendChild(empty);
+    return;
+  }
+
+  // Group into 16-bit blocks with separators
+  tm.tape2.forEach((bit, idx) => {
+    if (idx > 0 && idx % BITS === 0) {
+      const sep = document.createElement('div');
+      sep.className = 'tape-cell separator';
+      sep.textContent = '|';
+      container.appendChild(sep);
+    }
+    const cell = document.createElement('div');
+    cell.className = 'tape-cell';
+    if (idx === tm.head2) cell.classList.add('head');
+    cell.textContent = bit;
+    if (bit === 0) cell.classList.add('blank');
+    container.appendChild(cell);
+  });
+}
+
+function renderOutput() {
+  const container = document.getElementById('outputGrid');
+  container.innerHTML = '';
+  tm.fibNumbers.forEach((val, idx) => {
+    const item = document.createElement('div');
+    item.className = 'output-item';
+    const binary = val.toString(2).padStart(BITS, '0');
+    item.innerHTML = `
+      <span><span class="fib-index">F(${idx})</span> = <span class="fib-decimal">${val}</span></span>
+      <span class="fib-binary">${binary}</span>
+    `;
+    container.appendChild(item);
+  });
+}
+
+function renderLog() {
+  const container = document.getElementById('stepLog');
+  container.innerHTML = '';
+  // Show last 100 entries
+  const entries = tm.logEntries.slice(-100);
+  entries.forEach(e => {
+    const div = document.createElement('div');
+    div.className = 'step-log-entry';
+    // Highlight state names
+    const formatted = e.replace(
+      /\[([A-Z_]+)→([A-Z_]+)\]/,
+      '[<span class="log-state">$1</span>→<span class="log-state">$2</span>]'
+    );
+    div.innerHTML = formatted;
+    container.appendChild(div);
+  });
+  container.scrollTop = container.scrollHeight;
+}
+
+function renderStatus() {
+  document.getElementById('statusState').textContent = tm.state;
+  document.getElementById('statusStep').textContent = tm.stepCount;
+  document.getElementById('statusFibCount').textContent = tm.fibCount;
+  document.getElementById('statusRunning').textContent =
+    tm.halted ? 'Halted' : (runInterval ? 'Running' : 'Idle');
+
+  document.getElementById('btnStep').disabled = tm.halted;
+  document.getElementById('btnRun').disabled = tm.halted;
+  if (tm.halted && runInterval) {
+    stopRun();
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  CONTROLS
+// ══════════════════════════════════════════════════════════════
+
+let runInterval = null;
+
+function step() {
+  tmStep();
+}
+
+function toggleRun() {
+  if (runInterval) {
+    stopRun();
+  } else {
+    startRun();
+  }
+}
+
+function startRun() {
+  const speed = parseInt(document.getElementById('speedSlider').value);
+  runInterval = setInterval(() => {
+    if (tm.halted) {
+      stopRun();
+      return;
+    }
+    tmStep();
+  }, speed);
+  document.getElementById('btnRun').textContent = 'Pause';
+  document.getElementById('btnStep').disabled = true;
+  renderStatus();
+}
+
+function stopRun() {
+  clearInterval(runInterval);
+  runInterval = null;
+  document.getElementById('btnRun').textContent = 'Run';
+  document.getElementById('btnStep').disabled = tm.halted;
+  renderStatus();
+}
+
+function reset() {
+  stopRun();
+  initMachine();
+  render();
+}
+
+// Speed slider
+document.getElementById('speedSlider').addEventListener('input', function() {
+  document.getElementById('speedDisplay').textContent = this.value + ' ms';
+  if (runInterval) {
+    stopRun();
+    startRun();
+  }
+});
+
+// ── Init ──
+initMachine();
+render();
+</script>
+
+</body>
+</html>
