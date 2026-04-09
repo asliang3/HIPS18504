@@ -103,51 +103,55 @@
       background: #fff;
       border: 1px solid #dadce0;
       border-radius: 12px;
-      padding: 20px;
+      padding: 16px 12px;
       margin-bottom: 24px;
       overflow-x: auto;
     }
-
-    .state-flow {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      flex-wrap: wrap;
-      min-height: 56px;
+    .state-diagram svg {
+      display: block;
+      width: 100%;
+      min-width: 860px;
     }
-
-    .state-node {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      border: 2px solid #dadce0;
-      font-size: 0.7rem;
+    .graph-node ellipse {
+      fill: #fff;
+      stroke: #dadce0;
+      stroke-width: 2;
+      transition: fill 0.2s, stroke 0.2s;
+    }
+    .graph-node.active ellipse {
+      fill: #e8f0fe;
+      stroke: #1a73e8;
+      stroke-width: 2.5;
+    }
+    .graph-node.halt ellipse {
+      stroke-width: 3;
+    }
+    .graph-node text {
+      font-family: 'Google Sans', 'Segoe UI', Roboto, sans-serif;
+      font-size: 10px;
       font-weight: 600;
-      color: #5f6368;
-      background: #fff;
-      transition: all 0.2s;
-      padding: 0 6px;
-      flex-shrink: 0;
+      fill: #5f6368;
+      pointer-events: none;
     }
-    .state-node.active {
-      border-color: #1a73e8;
-      background: #e8f0fe;
-      color: #1a73e8;
-      box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.2);
-      transform: scale(1.15);
+    .graph-node.active text {
+      fill: #1a73e8;
     }
-    .state-node.halt {
-      border-style: double;
-      border-width: 4px;
+    .graph-edge path {
+      fill: none;
+      stroke: #c0c4c8;
+      stroke-width: 1.5;
     }
-
-    .state-arrow {
-      color: #dadce0;
-      font-size: 1rem;
-      flex-shrink: 0;
+    .graph-edge.active-edge path {
+      stroke: #1a73e8;
+      stroke-width: 2;
+    }
+    .graph-edge-label {
+      font-family: 'Google Sans', 'Segoe UI', Roboto, sans-serif;
+      font-size: 8px;
+      fill: #80868b;
+    }
+    .graph-edge.active-edge + .graph-edge-label-g text {
+      fill: #1a73e8;
     }
 
     /* ── Tape ── */
@@ -289,6 +293,70 @@
     .status-item strong {
       color: #202124;
     }
+
+    /* ── Current state description ── */
+    .current-state-box {
+      background: #fff;
+      border: 1px solid #dadce0;
+      border-left: 4px solid #1a73e8;
+      border-radius: 8px;
+      padding: 14px 18px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+    }
+    .current-state-box .cs-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #1a73e8;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      white-space: nowrap;
+    }
+    .current-state-box .cs-desc {
+      font-size: 0.88rem;
+      color: #3c4043;
+      line-height: 1.5;
+    }
+
+    /* ── State legend ── */
+    .state-legend {
+      background: #fff;
+      border: 1px solid #dadce0;
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 24px;
+    }
+    .legend-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 6px 24px;
+      margin-top: 10px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      padding: 4px 0;
+      font-size: 0.82rem;
+    }
+    .legend-item .legend-state {
+      font-family: 'Roboto Mono', 'SF Mono', monospace;
+      font-weight: 600;
+      color: #1a73e8;
+      min-width: 80px;
+      flex-shrink: 0;
+    }
+    .legend-item .legend-desc {
+      color: #5f6368;
+    }
+    .legend-item.active-legend {
+      background: #e8f0fe;
+      border-radius: 6px;
+      padding: 4px 8px;
+      margin: 0 -8px;
+    }
   </style>
 </head>
 <body>
@@ -330,7 +398,19 @@
   <!-- State diagram -->
   <div class="section-title">State Diagram</div>
   <div class="state-diagram">
-    <div class="state-flow" id="stateFlow"></div>
+    <svg id="stateSvg" viewBox="0 0 910 280"></svg>
+  </div>
+
+  <!-- Current state description -->
+  <div class="current-state-box">
+    <span class="cs-label" id="csLabel">INIT</span>
+    <span class="cs-desc" id="csDesc">Load initial Fibonacci values F(0)=0 and F(1)=1 onto the work tape.</span>
+  </div>
+
+  <!-- State legend -->
+  <div class="state-legend">
+    <div class="section-title">State Legend</div>
+    <div class="legend-grid" id="legendGrid"></div>
   </div>
 
   <!-- Tape 1: Work tape -->
@@ -387,7 +467,7 @@ const MAX_FIB_COUNT = 25; // F(0)..F(24)
 // All TM states in order for the diagram
 const ALL_STATES = [
   'INIT', 'COPY_B_OUT', 'ADD_SETUP', 'ADD_BIT',
-  'WRITE_SUM', 'ADVANCE', 'COPY_A_TO_TEMP',
+  'WRITE_SUM', 'ADVANCE',
   'COPY_B_TO_A', 'COPY_TEMP_TO_B', 'OVERFLOW_CHK', 'HALT'
 ];
 
@@ -398,11 +478,23 @@ const STATE_LABELS = {
   'ADD_BIT': 'ADD_BIT',
   'WRITE_SUM': 'WR_SUM',
   'ADVANCE': 'ADVANCE',
-  'COPY_A_TO_TEMP': 'A→TMP',
   'COPY_B_TO_A': 'B→A',
   'COPY_TEMP_TO_B': 'TMP→B',
   'OVERFLOW_CHK': 'OVF_CHK',
   'HALT': 'HALT'
+};
+
+const STATE_DESCRIPTIONS = {
+  'INIT':           'Load initial Fibonacci values F(0)=0 and F(1)=1 onto the work tape, then output F(0).',
+  'COPY_B_OUT':     'Copy the current Fibonacci number (register B) bit-by-bit to the output tape in 16-bit MSB-first format.',
+  'ADD_SETUP':      'Reset the carry bit to 0 and position the head at bit 0, preparing for binary addition A + B.',
+  'ADD_BIT':        'Read bit[i] from registers A and B, compute partial sum with carry (A[i] + B[i] + carry).',
+  'WRITE_SUM':      'Write the computed sum bit to a temporary register so the original A value is not overwritten during addition.',
+  'ADVANCE':        'Move to the next bit position. If all 16 bits are processed, proceed to the shift phase.',
+  'COPY_B_TO_A':    'Copy register B (old current Fibonacci) into register A, one bit at a time. A now holds the previous value for the next iteration.',
+  'COPY_TEMP_TO_B': 'Copy the addition result from the temp register into register B, one bit at a time. B now holds the new Fibonacci number.',
+  'OVERFLOW_CHK':   'Check whether the new Fibonacci number exceeds 16 bits (>65535). If it overflows, halt; otherwise output it.',
+  'HALT':           'The machine has finished — either all Fibonacci numbers up to F(24) have been generated, or a 16-bit overflow occurred.'
 };
 
 // ── Machine state ──
@@ -632,6 +724,7 @@ function tmStep() {
   // Log entry
   const entry = `Step ${tm.stepCount}: [${prevState}→${tm.state}] ${action}`;
   tm.logEntries.push(entry);
+  tm._prevState = prevState;
 
   render();
 }
@@ -642,6 +735,8 @@ function tmStep() {
 
 function render() {
   renderStates();
+  renderCurrentState();
+  renderLegend();
   renderTape1();
   renderTape2();
   renderOutput();
@@ -649,20 +744,196 @@ function render() {
   renderStatus();
 }
 
-function renderStates() {
-  const container = document.getElementById('stateFlow');
+function renderCurrentState() {
+  document.getElementById('csLabel').textContent = STATE_LABELS[tm.state] || tm.state;
+  document.getElementById('csDesc').textContent = STATE_DESCRIPTIONS[tm.state] || '';
+}
+
+function renderLegend() {
+  const container = document.getElementById('legendGrid');
   container.innerHTML = '';
-  ALL_STATES.forEach((s, idx) => {
-    if (idx > 0) {
-      const arrow = document.createElement('span');
-      arrow.className = 'state-arrow';
-      arrow.textContent = '→';
-      container.appendChild(arrow);
+  ALL_STATES.forEach(s => {
+    const item = document.createElement('div');
+    item.className = 'legend-item' + (s === tm.state ? ' active-legend' : '');
+    item.innerHTML = `<span class="legend-state">${STATE_LABELS[s] || s}</span><span class="legend-desc">${STATE_DESCRIPTIONS[s] || ''}</span>`;
+    container.appendChild(item);
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+//  SVG STATE GRAPH
+// ══════════════════════════════════════════════════════════════
+
+const NS = 'http://www.w3.org/2000/svg';
+const NODE_RX = 50, NODE_RY = 20;
+
+const GRAPH_NODES = [
+  { id: 'INIT',           x: 80,  y: 80 },
+  { id: 'COPY_B_OUT',     x: 230, y: 80 },
+  { id: 'ADD_SETUP',      x: 380, y: 80 },
+  { id: 'ADD_BIT',        x: 530, y: 80 },
+  { id: 'WRITE_SUM',      x: 680, y: 80 },
+  { id: 'ADVANCE',        x: 830, y: 80 },
+  { id: 'COPY_B_TO_A',    x: 755, y: 210 },
+  { id: 'COPY_TEMP_TO_B', x: 555, y: 210 },
+  { id: 'OVERFLOW_CHK',   x: 340, y: 210 },
+  { id: 'HALT',           x: 120, y: 210 },
+];
+
+// Transition edges with labels and optional path hints
+const GRAPH_EDGES = [
+  { from: 'INIT',           to: 'COPY_B_OUT',     label: 'Init done' },
+  { from: 'COPY_B_OUT',     to: 'ADD_SETUP',       label: 'All bits output' },
+  { from: 'ADD_SETUP',      to: 'ADD_BIT',         label: 'Carry = 0' },
+  { from: 'ADD_BIT',        to: 'WRITE_SUM',       label: 'Sum computed' },
+  { from: 'WRITE_SUM',      to: 'ADVANCE',         label: 'Bit stored' },
+  { from: 'ADVANCE',        to: 'ADD_BIT',         label: 'i < 16',       type: 'curve-above' },
+  { from: 'ADVANCE',        to: 'COPY_B_TO_A',     label: 'i = 16', labelOffset: { dx: 20, dy: 0 } },
+  { from: 'COPY_B_TO_A',    to: 'COPY_TEMP_TO_B',  label: 'All copied' },
+  { from: 'COPY_TEMP_TO_B', to: 'OVERFLOW_CHK',    label: 'All copied' },
+  { from: 'OVERFLOW_CHK',   to: 'COPY_B_OUT',      label: 'No overflow',  type: 'curve-back' },
+  { from: 'OVERFLOW_CHK',   to: 'HALT',            label: 'Overflow' },
+  { from: 'COPY_B_OUT',     to: 'HALT',            label: 'Count = max', labelOffset: { dx: -28, dy: 0 } },
+  // Self-loops
+  { from: 'COPY_B_OUT',     to: 'COPY_B_OUT',      label: 'Next bit',  type: 'self-top' },
+  { from: 'COPY_B_TO_A',    to: 'COPY_B_TO_A',     label: 'i < 16',    type: 'self-bottom' },
+  { from: 'COPY_TEMP_TO_B', to: 'COPY_TEMP_TO_B',  label: 'i < 16',    type: 'self-bottom' },
+];
+
+function nodeById(id) {
+  return GRAPH_NODES.find(n => n.id === id);
+}
+
+// Point on ellipse boundary toward target
+function ellipseEdge(cx, cy, tx, ty) {
+  const dx = tx - cx, dy = ty - cy;
+  const a = Math.atan2(dy, dx);
+  return { x: cx + NODE_RX * Math.cos(a), y: cy + NODE_RY * Math.sin(a) };
+}
+
+function svgEl(tag, attrs) {
+  const el = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+  return el;
+}
+
+function buildStateGraph() {
+  const svg = document.getElementById('stateSvg');
+  svg.innerHTML = '';
+
+  // Arrow markers
+  const defs = svgEl('defs', {});
+  ['arrowGray:#9aa0a6', 'arrowBlue:#1a73e8'].forEach(m => {
+    const [id, color] = m.split(':');
+    const marker = svgEl('marker', {
+      id, markerWidth: 10, markerHeight: 7, refX: 9, refY: 3.5,
+      orient: 'auto', markerUnits: 'userSpaceOnUse'
+    });
+    marker.appendChild(svgEl('polygon', { points: '0 0.5, 9 3.5, 0 6.5', fill: color }));
+    defs.appendChild(marker);
+  });
+  svg.appendChild(defs);
+
+  // Draw edges
+  GRAPH_EDGES.forEach((edge, idx) => {
+    const src = nodeById(edge.from);
+    const tgt = nodeById(edge.to);
+    let pathD, labelX, labelY, labelAngle = 0;
+
+    if (edge.from === edge.to) {
+      // Self-loop
+      const topLoop = edge.type === 'self-top';
+      const dy = topLoop ? -1 : 1;
+      const cx = src.x, cy = src.y;
+      const y1 = cy + dy * NODE_RY;
+      const cpY = cy + dy * 44;
+      pathD = `M ${cx - 12},${y1} C ${cx - 26},${cpY} ${cx + 26},${cpY} ${cx + 12},${y1}`;
+      labelX = cx;
+      labelY = cpY + dy * 10;
+    } else if (edge.type === 'curve-above') {
+      // ADVANCE → ADD_BIT, arc above top row
+      const s = ellipseEdge(src.x, src.y, src.x, src.y - 60);
+      const t = ellipseEdge(tgt.x, tgt.y, tgt.x, tgt.y - 60);
+      const midX = (src.x + tgt.x) / 2;
+      pathD = `M ${s.x},${s.y} C ${s.x},${s.y - 40} ${t.x},${t.y - 40} ${t.x},${t.y}`;
+      labelX = midX;
+      labelY = Math.min(s.y, t.y) - 38;
+    } else if (edge.type === 'curve-back') {
+      // OVERFLOW_CHK → COPY_B_OUT, curved path going up-left
+      const s = ellipseEdge(src.x, src.y, src.x - 60, src.y - 80);
+      const t = ellipseEdge(tgt.x, tgt.y, tgt.x - 20, tgt.y + 50);
+      const cpx1 = src.x - 90, cpy1 = src.y - 70;
+      const cpx2 = tgt.x - 70, cpy2 = tgt.y + 60;
+      pathD = `M ${s.x},${s.y} C ${cpx1},${cpy1} ${cpx2},${cpy2} ${t.x},${t.y}`;
+      labelX = (cpx1 + cpx2) / 2 + 8;
+      labelY = (cpy1 + cpy2) / 2 + 15;
+    } else {
+      // Straight line
+      const s = ellipseEdge(src.x, src.y, tgt.x, tgt.y);
+      const t = ellipseEdge(tgt.x, tgt.y, src.x, src.y);
+      pathD = `M ${s.x},${s.y} L ${t.x},${t.y}`;
+      labelX = (s.x + t.x) / 2;
+      labelY = (s.y + t.y) / 2 - 6;
+      // Offset label to avoid overlapping the line
+      if (src.y === tgt.y) labelY -= 2;  // horizontal
     }
-    const node = document.createElement('div');
-    node.className = 'state-node' + (s === tm.state ? ' active' : '') + (s === 'HALT' ? ' halt' : '');
-    node.textContent = STATE_LABELS[s] || s;
-    container.appendChild(node);
+
+    const g = svgEl('g', { class: 'graph-edge', 'data-from': edge.from, 'data-to': edge.to });
+    g.appendChild(svgEl('path', { d: pathD, 'marker-end': 'url(#arrowGray)' }));
+    svg.appendChild(g);
+
+    // Label
+    if (edge.label) {
+      const off = edge.labelOffset || { dx: 0, dy: 0 };
+      const lg = svgEl('g', { class: 'graph-edge-label-g' });
+      const lbl = svgEl('text', {
+        class: 'graph-edge-label', x: labelX + off.dx, y: labelY + off.dy,
+        'text-anchor': 'middle', 'dominant-baseline': 'middle'
+      });
+      lbl.textContent = edge.label;
+      lg.appendChild(lbl);
+      svg.appendChild(lg);
+    }
+  });
+
+  // Draw nodes
+  GRAPH_NODES.forEach(node => {
+    const g = svgEl('g', { class: 'graph-node', id: 'gnode-' + node.id });
+    if (node.id === 'HALT') g.classList.add('halt');
+
+    // Double outline for HALT
+    if (node.id === 'HALT') {
+      g.appendChild(svgEl('ellipse', { cx: node.x, cy: node.y, rx: NODE_RX + 4, ry: NODE_RY + 4 }));
+    }
+    g.appendChild(svgEl('ellipse', { cx: node.x, cy: node.y, rx: NODE_RX, ry: NODE_RY }));
+
+    const txt = svgEl('text', {
+      x: node.x, y: node.y,
+      'text-anchor': 'middle', 'dominant-baseline': 'central'
+    });
+    txt.textContent = STATE_LABELS[node.id] || node.id;
+    g.appendChild(txt);
+
+    svg.appendChild(g);
+  });
+}
+
+function renderStates() {
+  // Update node highlights
+  GRAPH_NODES.forEach(node => {
+    const g = document.getElementById('gnode-' + node.id);
+    if (!g) return;
+    g.classList.toggle('active', node.id === tm.state);
+  });
+
+  // Update edge highlights
+  document.querySelectorAll('#stateSvg .graph-edge').forEach(g => {
+    const from = g.getAttribute('data-from');
+    const to = g.getAttribute('data-to');
+    const isActive = from === tm._prevState && to === tm.state;
+    g.classList.toggle('active-edge', isActive);
+    const path = g.querySelector('path');
+    if (path) path.setAttribute('marker-end', isActive ? 'url(#arrowBlue)' : 'url(#arrowGray)');
   });
 }
 
@@ -832,6 +1103,7 @@ document.getElementById('speedSlider').addEventListener('input', function() {
 
 // ── Init ──
 initMachine();
+buildStateGraph();
 render();
 </script>
 
