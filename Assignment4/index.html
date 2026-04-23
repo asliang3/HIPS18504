@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Many-Minds Debate Engine</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3354;
+      --text: #e2e8f0;
+      --text-muted: #8892b0;
+      --accent: #64ffda;
+      --accent2: #7b68ee;
+      --danger: #ff6b6b;
+      --warn: #ffa94d;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 28px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .logo { font-size: 1.5rem; }
+    .logo-text h1 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 0.04em;
+    }
+    .logo-text p { font-size: 0.7rem; color: var(--text-muted); margin-top: 1px; }
+    .back-link {
+      margin-left: auto;
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      text-decoration: none;
+    }
+    .back-link:hover { color: var(--text); }
+
+    /* ── Layout ── */
+    .app-body {
+      display: grid;
+      grid-template-columns: 300px 1fr 320px;
+      height: calc(100vh - 57px);
+      overflow: hidden;
+    }
+    @media (max-width: 900px) {
+      .app-body { grid-template-columns: 1fr; grid-template-rows: auto 1fr auto; height: auto; }
+    }
+
+    /* ── Left panel ── */
+    .panel-left {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      padding: 20px;
+      gap: 18px;
+    }
+
+    .panel-section-title {
+      font-size: 0.62rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    /* API key */
+    .key-row { display: flex; gap: 6px; }
+    .key-row input {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 0.75rem;
+      font-family: inherit;
+      color: var(--text);
+      outline: none;
+    }
+    .key-row input:focus { border-color: var(--accent2); }
+    .key-row input.ok { border-color: var(--accent); color: var(--accent); }
+
+    /* Question area */
+    .q-input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-size: 0.82rem;
+      font-family: inherit;
+      color: var(--text);
+      outline: none;
+      resize: vertical;
+      min-height: 70px;
+      line-height: 1.6;
+    }
+    .q-input:focus { border-color: var(--accent2); }
+
+    .presets select {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 0.78rem;
+      font-family: inherit;
+      color: var(--text);
+      outline: none;
+      cursor: pointer;
+    }
+    .presets select:focus { border-color: var(--accent2); }
+    .presets select option { background: var(--surface2); }
+
+    /* Personas */
+    .persona-list { display: flex; flex-direction: column; gap: 6px; }
+    .persona-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      transition: border-color 0.2s, background 0.2s;
+      cursor: pointer;
+      user-select: none;
+    }
+    .persona-row.selected { border-color: var(--accent2); background: #1e2240; }
+    .persona-row.active { border-color: var(--accent); background: #1a2e2a; }
+    .persona-row.active .p-name { color: var(--accent); }
+    .p-emoji-sm { font-size: 1.1rem; }
+    .p-name { font-size: 0.8rem; font-weight: 700; }
+    .p-title { font-size: 0.68rem; color: var(--text-muted); margin-top: 1px; }
+    .p-dot-sm {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--border);
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+    .persona-row.active .p-dot-sm {
+      background: var(--accent);
+      animation: glow 0.8s ease-in-out infinite alternate;
+    }
+    @keyframes glow { from { box-shadow: 0 0 3px var(--accent); } to { box-shadow: 0 0 9px var(--accent); } }
+
+    /* Action buttons */
+    .btn {
+      border: none; border-radius: 6px;
+      padding: 10px 18px;
+      font-size: 0.8rem;
+      font-family: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.04em;
+      transition: opacity 0.15s, background 0.15s;
+      width: 100%;
+    }
+    .btn-start {
+      background: var(--accent);
+      color: #0a0e1a;
+    }
+    .btn-start:hover:not(:disabled) { opacity: 0.85; }
+    .btn-start:disabled { opacity: 0.3; cursor: default; }
+    .btn-reset {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+    .btn-reset:hover { color: var(--text); border-color: var(--text-muted); }
+
+    /* Step controls */
+    .step-controls {
+      display: flex;
+      gap: 6px;
+    }
+    .btn-step {
+      flex: 1;
+      background: var(--accent2);
+      color: #fff;
+      padding: 9px;
+    }
+    .btn-step:hover:not(:disabled) { opacity: 0.85; }
+    .btn-step:disabled { opacity: 0.3; cursor: default; }
+    .btn-auto {
+      flex: 1;
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 9px;
+    }
+    .btn-auto:hover:not(:disabled) { border-color: var(--accent2); }
+    .btn-auto:disabled { opacity: 0.3; cursor: default; }
+
+    .speed-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+    input[type=range] {
+      flex: 1;
+      accent-color: var(--accent2);
+    }
+
+    /* ── Chat panel ── */
+    .panel-chat {
+      display: flex;
+      flex-direction: column;
+      background: var(--bg);
+      overflow: hidden;
+    }
+    .chat-header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .chat-header-title { font-size: 0.82rem; font-weight: 700; color: var(--text); }
+    .chat-header-sub   { font-size: 0.7rem; color: var(--text-muted); }
+    .chat-phase-tag {
+      margin-left: auto;
+      font-size: 0.65rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 3px 10px;
+      color: var(--accent2);
+    }
+
+    .chat-log {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      scroll-behavior: smooth;
+    }
+
+    /* Phase separator */
+    .phase-sep {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 0;
+    }
+    .phase-sep::before, .phase-sep::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+    .phase-sep-label {
+      font-size: 0.62rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--accent2);
+      white-space: nowrap;
+    }
+
+    /* Chat message */
+    .msg {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      animation: fadeUp 0.25s ease both;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .msg-avatar {
+      width: 34px; height: 34px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+      border: 1px solid var(--border);
+    }
+    .msg-right { flex: 1; min-width: 0; }
+    .msg-top {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .msg-pname  { font-size: 0.78rem; font-weight: 700; }
+    .msg-ptitle { font-size: 0.65rem; color: var(--text-muted); }
+    .msg-phase-badge {
+      margin-left: auto;
+      font-size: 0.6rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      background: var(--surface2);
+      border-radius: 4px;
+      padding: 2px 6px;
+      color: var(--text-muted);
+    }
+    .msg-bubble {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px 12px 12px 12px;
+      padding: 10px 14px;
+      font-size: 0.83rem;
+      line-height: 1.65;
+      color: var(--text);
+    }
+    .msg-bubble.streaming::after {
+      content: '█';
+      color: var(--accent);
+      animation: blink 0.55s step-end infinite;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    /* Step indicator */
+    .step-indicator {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+    .step-badge {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 0.7rem;
+      color: var(--accent2);
+      font-weight: 700;
+      letter-spacing: 0.06em;
+    }
+
+    /* ── Right panel: graph ── */
+    .panel-right {
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .graph-header {
+      border-bottom: 1px solid var(--border);
+      padding: 10px 14px;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    #graphCanvas {
+      flex: 1;
+      width: 100%;
+    }
+
+    .results-section {
+      border-top: 1px solid var(--border);
+      padding: 14px;
+      overflow-y: auto;
+      max-height: 46%;
+    }
+    .r-block { margin-bottom: 12px; }
+    .r-label {
+      font-size: 0.62rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .r-item {
+      display: flex;
+      gap: 7px;
+      font-size: 0.74rem;
+      color: var(--text);
+      line-height: 1.55;
+      padding: 5px 0;
+      border-bottom: 1px solid var(--surface2);
+    }
+    .r-item:last-child { border-bottom: none; }
+    .r-icon-c { color: var(--accent); font-size: 0.72rem; margin-top: 1px; }
+    .r-icon-d { color: var(--warn); font-size: 0.72rem; margin-top: 1px; }
+
+    /* scrollbars */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🧠</div>
+  <div class="logo-text">
+    <h1>MANY-MINDS DEBATE ENGINE</h1>
+    <p>Six AI personas · step-by-step · live network graph</p>
+  </div>
+  <a href="../index.html" class="back-link">← back</a>
+</header>
+
+<div class="app-body">
+
+  <!-- ── LEFT PANEL ── -->
+  <div class="panel-left">
+
+    <div>
+      <div class="panel-section-title">API Key</div>
+      <div class="key-row">
+        <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-…" />
+      </div>
+    </div>
+
+    <div>
+      <div class="panel-section-title">Question</div>
+      <textarea class="q-input" id="questionInput"
+        placeholder="Type your debate question here…&#10;(or pick a preset below)"></textarea>
+      <div class="presets" style="margin-top:8px">
+        <select id="presetSelect" onchange="usePreset()">
+          <option value="">— or pick a preset —</option>
+          <option>Should artificial general intelligence be developed at all?</option>
+          <option>Is social media doing more harm than good to society?</option>
+          <option>Should universal basic income replace most welfare programs?</option>
+          <option>Will remote work ultimately weaken or strengthen communities?</option>
+          <option>Should gene editing of human embryos be permitted?</option>
+          <option>Is economic growth compatible with environmental sustainability?</option>
+          <option>Should voting be mandatory in democracies?</option>
+          <option>Will automation create more jobs than it destroys?</option>
+          <option>Should space colonisation be a priority over fixing Earth?</option>
+          <option>Is nuclear energy part of the solution to climate change?</option>
+        </select>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel-section-title">Personas (select 3–6)</div>
+      <div class="persona-list" id="personaList"></div>
+    </div>
+
+    <div>
+      <div class="panel-section-title">Controls</div>
+      <div class="step-controls" id="stepControls" style="display:none">
+        <button class="btn btn-step" id="btnStep" onclick="doStep()" disabled>
+          ▶ Step
+        </button>
+        <button class="btn btn-auto" id="btnAuto" onclick="toggleAuto()" disabled>
+          ⏩ Auto
+        </button>
+      </div>
+      <div class="speed-row" id="speedRow" style="display:none;margin-top:8px">
+        <span>Speed</span>
+        <input type="range" id="speedSlider" min="400" max="3000" value="1200" step="100" />
+        <span id="speedVal">1.2s</span>
+      </div>
+      <button class="btn btn-start" id="btnStart" onclick="startDebate()" style="margin-top:8px" disabled>
+        ⚡ START DEBATE
+      </button>
+      <button class="btn btn-reset" id="btnReset" onclick="resetDebate()" style="margin-top:6px; display:none">
+        ↺ Reset
+      </button>
+    </div>
+
+  </div>
+
+  <!-- ── CHAT PANEL ── -->
+  <div class="panel-chat">
+    <div class="chat-header">
+      <div>
+        <div class="chat-header-title" id="chatTitle">Waiting to start…</div>
+        <div class="chat-header-sub" id="chatSub">Set up your question and API key, then press Start.</div>
+      </div>
+      <span class="chat-phase-tag" id="phaseTag">Idle</span>
+    </div>
+    <div class="chat-log" id="chatLog">
+      <div style="color:var(--text-muted);font-size:0.8rem;margin:auto;text-align:center;line-height:2">
+        Messages will appear here<br/>as the debate unfolds step-by-step.
+      </div>
+    </div>
+    <div class="step-indicator">
+      <span class="step-badge" id="stepBadge">STEP 0 / 0</span>
+      <span id="stepLabel">—</span>
+    </div>
+  </div>
+
+  <!-- ── RIGHT PANEL ── -->
+  <div class="panel-right">
+    <div class="graph-header">🕸 Relationship Network</div>
+    <canvas id="graphCanvas"></canvas>
+    <div class="results-section" id="resultsSection" style="display:none">
+      <div class="r-block" id="consensusBlock">
+        <div class="r-label">✅ Consensus</div>
+      </div>
+      <div class="r-block" id="disagreeBlock">
+        <div class="r-label">⚡ Disagreement</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+//  PERSONAS
+// ══════════════════════════════════════════════════════════════
+const ALL_PERSONAS = [
+  { id:'alex',   name:'Alex',   title:'The Optimist',      emoji:'🌟', color:'#64ffda', bg:'#0d2a22',
+    desc:'a relentless optimist who believes human ingenuity and cooperation can overcome almost any challenge',
+    style:'Enthusiastic and forward-looking. Cites progress. Finds possibilities others miss.' },
+  { id:'morgan', name:'Morgan', title:'The Skeptic',       emoji:'🔍', color:'#8892b0', bg:'#191d2e',
+    desc:'a rigorous skeptic who demands evidence, questions assumptions, and identifies logical fallacies',
+    style:'Measured. Asks "what\'s the evidence?" and "what are the failure modes?". Plays devil\'s advocate.' },
+  { id:'jordan', name:'Jordan', title:'The Ethicist',      emoji:'⚖️', color:'#88c0d0', bg:'#0e1e26',
+    desc:'a moral philosopher focused on ethics, equity, and the rights of all stakeholders including the vulnerable',
+    style:'Principled. Asks "who is harmed?", "is this fair?". Invokes justice and dignity.' },
+  { id:'sam',    name:'Sam',    title:'The Pragmatist',    emoji:'🔧', color:'#ffa94d', bg:'#241a0a',
+    desc:'a pragmatist focused on what is actually achievable, implementable, and cost-effective in the real world',
+    style:'Grounded. Asks "how exactly?" and "what does it cost?". Values incremental progress.' },
+  { id:'taylor', name:'Taylor', title:'The Traditionalist',emoji:'📜', color:'#ff6b6b', bg:'#2a0f0f',
+    desc:'a traditionalist who values proven institutions, cultural heritage, and caution about rapid change',
+    style:'Historically minded. Warns about unintended consequences. Values stability and tested methods.' },
+  { id:'riley',  name:'Riley',  title:'The Futurist',      emoji:'🚀', color:'#c792ea', bg:'#1e1229',
+    desc:'a systems-thinking futurist who reasons about long-term consequences and civilisational-scale change',
+    style:'Big-picture. Thinks in systems and decades. Embraces disruption and transformative thinking.' }
+];
+
+// ══════════════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════════════
+let apiKey = '';
+let selectedIds = new Set(['alex','morgan','jordan','sam','taylor','riley']);
+let debateSteps = [];   // {personaId, phase, text, systemPrompt, userPrompt, maxTokens}
+let currentStep = -1;
+let debateLog = [];     // {personaId, personaName, phase, text}
+let autoTimer = null;
+let isRunning = false;
+let synthesisAdded = false;
+
+// Graph
+let edges = [];   // {from, to, weight, type}  type: 'agree'|'disagree'|'neutral'
+const graphNodes = {}; // id → {x,y,vx,vy}
+
+// ══════════════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════════════
+function init() {
+  renderPersonaList();
+  document.getElementById('apiKeyInput').addEventListener('input', onKeyChange);
+  document.getElementById('questionInput').addEventListener('input', updateStart);
+  document.getElementById('speedSlider').addEventListener('input', () => {
+    const v = document.getElementById('speedSlider').value;
+    document.getElementById('speedVal').textContent = (v/1000).toFixed(1) + 's';
+    if (autoTimer) { clearInterval(autoTimer); autoTimer = setInterval(doStep, +v); }
+  });
+  initGraph();
+}
+
+function onKeyChange() {
+  apiKey = document.getElementById('apiKeyInput').value.trim();
+  document.getElementById('apiKeyInput').classList.toggle('ok', apiKey.startsWith('sk-ant-'));
+  updateStart();
+}
+
+function usePreset() {
+  const sel = document.getElementById('presetSelect');
+  if (sel.value) {
+    document.getElementById('questionInput').value = sel.value;
+    sel.value = '';
+    updateStart();
+  }
+}
+
+function updateStart() {
+  const q = document.getElementById('questionInput').value.trim();
+  document.getElementById('btnStart').disabled = !apiKey || !q || isRunning || selectedIds.size < 2;
+}
+
+function renderPersonaList() {
+  const list = document.getElementById('personaList');
+  list.innerHTML = '';
+  ALL_PERSONAS.forEach(p => {
+    const row = document.createElement('div');
+    row.className = 'persona-row' + (selectedIds.has(p.id) ? ' selected' : '');
+    row.id = 'prow-' + p.id;
+    row.innerHTML = `
+      <span class="p-emoji-sm">${p.emoji}</span>
+      <div><div class="p-name" style="color:${p.color}">${p.name}</div><div class="p-title">${p.title}</div></div>
+      <div class="p-dot-sm" id="pdot-${p.id}"></div>`;
+    row.onclick = () => togglePersona(p.id);
+    list.appendChild(row);
+  });
+}
+
+function togglePersona(id) {
+  if (isRunning) return;
+  if (selectedIds.has(id)) {
+    if (selectedIds.size <= 2) return; // min 2
+    selectedIds.delete(id);
+  } else {
+    selectedIds.add(id);
+  }
+  document.getElementById('prow-' + id).classList.toggle('selected', selectedIds.has(id));
+  updateStart();
+}
+
+// ══════════════════════════════════════════════════════════════
+//  DEBATE PLAN BUILDER
+// ══════════════════════════════════════════════════════════════
+function buildDebatePlan(question) {
+  const personas = ALL_PERSONAS.filter(p => selectedIds.has(p.id));
+  debateSteps = [];
+  debateLog = [];
+  edges = [];
+
+  const buildSys = p => `You are ${p.name}, ${p.desc}.\nStyle: ${p.style}\nBe concise (2–3 sentences). Stay sharply in character. Speak in first person.`;
+
+  // Phase 1: Opening statements
+  personas.forEach(p => {
+    debateSteps.push({
+      type: 'speak',
+      personaId: p.id,
+      phase: 'Opening',
+      systemPrompt: buildSys(p),
+      userPrompt: `The debate question is: "${question}"\n\nGive your opening position in 2–3 sentences. Be direct and in-character.`,
+      maxTokens: 150
+    });
+  });
+
+  // Phase 2: Rebuttals — each persona responds to 1 other
+  personas.forEach((p, i) => {
+    const other = personas[(i + 1) % personas.length];
+    debateSteps.push({
+      type: 'speak',
+      personaId: p.id,
+      phase: 'Rebuttal',
+      targetId: other.id,
+      systemPrompt: buildSys(p),
+      userPrompt: `__INJECT_TRANSCRIPT__\n\nNow give a rebuttal in 2–3 sentences. Directly address ${other.name}'s point by name and sharpen your own position.`,
+      maxTokens: 160
+    });
+  });
+
+  // Phase 3: Cross-examination — first half questions second half
+  const half = Math.ceil(personas.length / 2);
+  personas.slice(0, half).forEach((p, i) => {
+    const target = personas[half + (i % (personas.length - half))];
+    debateSteps.push({
+      type: 'speak',
+      personaId: p.id,
+      phase: 'Cross-exam',
+      targetId: target.id,
+      systemPrompt: buildSys(p),
+      userPrompt: `__INJECT_TRANSCRIPT__\n\nPose one sharp question directly to ${target.name}, challenging their logic or evidence. 1–2 sentences.`,
+      maxTokens: 100
+    });
+  });
+
+  // Phase 4: Closing — everyone makes a final remark
+  personas.forEach(p => {
+    debateSteps.push({
+      type: 'speak',
+      personaId: p.id,
+      phase: 'Closing',
+      systemPrompt: buildSys(p),
+      userPrompt: `__INJECT_TRANSCRIPT__\n\nGive a closing remark in 1–2 sentences: what is the single most important point from your perspective?`,
+      maxTokens: 110
+    });
+  });
+
+  // Final synthesis step
+  debateSteps.push({ type: 'synthesis', phase: 'Synthesis' });
+
+  currentStep = -1;
+  synthesisAdded = false;
+  updateStepBadge();
+}
+
+function injectTranscript(prompt) {
+  if (!prompt.includes('__INJECT_TRANSCRIPT__')) return prompt;
+  const transcript = debateLog.map(e => `[${e.personaName} — ${e.phase}]: ${e.text}`).join('\n\n');
+  return prompt.replace('__INJECT_TRANSCRIPT__', `Debate so far:\n${transcript}`);
+}
+
+// ══════════════════════════════════════════════════════════════
+//  ORCHESTRATION
+// ══════════════════════════════════════════════════════════════
+async function startDebate() {
+  const q = document.getElementById('questionInput').value.trim();
+  if (!q || !apiKey) return;
+  isRunning = true;
+  updateStart();
+
+  buildDebatePlan(q);
+  initGraphNodes();
+
+  document.getElementById('chatLog').innerHTML = '';
+  document.getElementById('resultsSection').style.display = 'none';
+  document.getElementById('stepControls').style.display = 'flex';
+  document.getElementById('speedRow').style.display = 'flex';
+  document.getElementById('btnReset').style.display = 'block';
+  document.getElementById('btnStart').style.display = 'none';
+  document.getElementById('chatTitle').textContent = q;
+  document.getElementById('chatSub').textContent = `${selectedIds.size} personas · ${debateSteps.length} steps`;
+  updateStepBadge();
+  enableStepBtn();
+}
+
+async function doStep() {
+  currentStep++;
+  if (currentStep >= debateSteps.length) {
+    stopAuto();
+    disableStepBtn();
+    return;
+  }
+
+  disableStepBtn();
+  const step = debateSteps[currentStep];
+  updateStepBadge(step.phase);
+
+  if (step.type === 'synthesis') {
+    document.getElementById('phaseTag').textContent = 'Synthesis';
+    document.getElementById('stepLabel').textContent = 'Generating consensus & disagreement map…';
+    await runSynthesis();
+    enableStepBtn();
+    if (currentStep + 1 >= debateSteps.length) {
+      stopAuto();
+      disableStepBtn();
+    }
+    return;
+  }
+
+  // Speak step
+  const persona = ALL_PERSONAS.find(p => p.id === step.personaId);
+  setPersonaActive(persona.id);
+  document.getElementById('phaseTag').textContent = step.phase;
+  document.getElementById('stepLabel').textContent = `${persona.name} is thinking…`;
+
+  const userPrompt = injectTranscript(step.userPrompt);
+
+  try {
+    const bubble = appendMessage(persona, step.phase, '');
+    bubble.classList.add('streaming');
+
+    const text = await streamCall(step.systemPrompt, userPrompt, step.maxTokens, t => {
+      bubble.textContent = t;
+    });
+    bubble.classList.remove('streaming');
+
+    debateLog.push({ personaId: persona.id, personaName: persona.name, phase: step.phase, text });
+
+    // Update graph edges based on phase
+    if (step.targetId) {
+      updateEdge(persona.id, step.targetId, step.phase);
+    }
+    drawGraph();
+  } catch(e) {
+    appendSystemMsg('⚠ Error: ' + e.message);
+    stopAuto();
+  }
+
+  setPersonaActive(null);
+  document.getElementById('stepLabel').textContent = `Step ${currentStep + 1} complete.`;
+  enableStepBtn();
+
+  if (currentStep + 1 >= debateSteps.length) {
+    stopAuto();
+    disableStepBtn();
+  }
+}
+
+function toggleAuto() {
+  if (autoTimer) {
+    stopAuto();
+  } else {
+    startAuto();
+  }
+}
+
+function startAuto() {
+  const speed = +document.getElementById('speedSlider').value;
+  document.getElementById('btnAuto').textContent = '⏸ Pause';
+  autoTimer = setInterval(() => {
+    if (currentStep + 1 >= debateSteps.length) { stopAuto(); return; }
+    doStep();
+  }, speed);
+  doStep(); // immediate first step
+}
+
+function stopAuto() {
+  if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
+  document.getElementById('btnAuto').textContent = '⏩ Auto';
+}
+
+function enableStepBtn() {
+  const done = currentStep + 1 >= debateSteps.length;
+  document.getElementById('btnStep').disabled = done;
+  document.getElementById('btnAuto').disabled = done;
+}
+function disableStepBtn() {
+  document.getElementById('btnStep').disabled = true;
+  document.getElementById('btnAuto').disabled = true;
+}
+
+function updateStepBadge(phase) {
+  const total = debateSteps.length;
+  const cur = Math.max(0, currentStep + 1);
+  document.getElementById('stepBadge').textContent = `STEP ${cur} / ${total}`;
+  if (phase) document.getElementById('phaseTag').textContent = phase;
+}
+
+function resetDebate() {
+  stopAuto();
+  isRunning = false;
+  debateSteps = [];
+  debateLog = [];
+  edges = [];
+  currentStep = -1;
+  document.getElementById('chatLog').innerHTML = '<div style="color:var(--text-muted);font-size:0.8rem;margin:auto;text-align:center;line-height:2">Messages will appear here<br/>as the debate unfolds step-by-step.</div>';
+  document.getElementById('resultsSection').style.display = 'none';
+  document.getElementById('stepControls').style.display = 'none';
+  document.getElementById('speedRow').style.display = 'none';
+  document.getElementById('btnReset').style.display = 'none';
+  document.getElementById('btnStart').style.display = 'block';
+  document.getElementById('chatTitle').textContent = 'Waiting to start…';
+  document.getElementById('chatSub').textContent = 'Set up your question and API key, then press Start.';
+  document.getElementById('phaseTag').textContent = 'Idle';
+  document.getElementById('stepBadge').textContent = 'STEP 0 / 0';
+  document.getElementById('stepLabel').textContent = '—';
+  setPersonaActive(null);
+  Object.keys(graphNodes).forEach(k => delete graphNodes[k]);
+  drawGraph();
+  updateStart();
+}
+
+// ══════════════════════════════════════════════════════════════
+//  UI HELPERS
+// ══════════════════════════════════════════════════════════════
+function appendMessage(persona, phase, text) {
+  const log = document.getElementById('chatLog');
+  // Phase separator if phase changed
+  const lastPhaseEl = log.querySelector('.phase-sep:last-of-type');
+  const lastPhaseLabel = lastPhaseEl ? lastPhaseEl.dataset.phase : '';
+  if (lastPhaseLabel !== phase) {
+    const sep = document.createElement('div');
+    sep.className = 'phase-sep';
+    sep.dataset.phase = phase;
+    const phaseIcons = { Opening:'📣', Rebuttal:'🔁', 'Cross-exam':'🔎', Closing:'🎯', Synthesis:'🧩' };
+    sep.innerHTML = `<span class="phase-sep-label">${phaseIcons[phase]||''} ${phase}</span>`;
+    log.appendChild(sep);
+  }
+
+  const msg = document.createElement('div');
+  msg.className = 'msg';
+  msg.innerHTML = `
+    <div class="msg-avatar" style="background:${persona.bg};border-color:${persona.color}">${persona.emoji}</div>
+    <div class="msg-right">
+      <div class="msg-top">
+        <span class="msg-pname" style="color:${persona.color}">${persona.name}</span>
+        <span class="msg-ptitle">${persona.title}</span>
+        <span class="msg-phase-badge">${phase}</span>
+      </div>
+      <div class="msg-bubble" id="bubble-${persona.id}-${Date.now()}">${text}</div>
+    </div>`;
+  log.appendChild(msg);
+  log.scrollTop = log.scrollHeight;
+  return msg.querySelector('.msg-bubble');
+}
+
+function appendSystemMsg(text) {
+  const log = document.getElementById('chatLog');
+  const div = document.createElement('div');
+  div.style.cssText = 'font-size:0.72rem;color:var(--danger);padding:6px 0;text-align:center';
+  div.textContent = text;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+
+function setPersonaActive(id) {
+  ALL_PERSONAS.forEach(p => {
+    const row = document.getElementById('prow-' + p.id);
+    if (row) row.classList.toggle('active', p.id === id);
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+//  GRAPH
+// ══════════════════════════════════════════════════════════════
+const canvas = document.getElementById('graphCanvas');
+const ctx = canvas.getContext('2d');
+
+function initGraph() {
+  const ro = new ResizeObserver(() => { resizeCanvas(); drawGraph(); });
+  ro.observe(canvas.parentElement);
+  resizeCanvas();
+  requestAnimationFrame(animateGraph);
+}
+
+function resizeCanvas() {
+  const p = canvas.parentElement;
+  const resultsH = document.getElementById('resultsSection').offsetHeight || 0;
+  const headerH = 37;
+  canvas.width = p.clientWidth;
+  canvas.height = Math.max(80, p.clientHeight - headerH - resultsH);
+}
+
+function initGraphNodes() {
+  const personas = ALL_PERSONAS.filter(p => selectedIds.has(p.id));
+  const cx = canvas.width / 2, cy = canvas.height / 2;
+  const r = Math.min(cx, cy) * 0.65;
+  personas.forEach((p, i) => {
+    const angle = (i / personas.length) * Math.PI * 2 - Math.PI / 2;
+    graphNodes[p.id] = { x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle), vx: 0, vy: 0 };
+  });
+  edges = [];
+  drawGraph();
+}
+
+function updateEdge(fromId, toId, phase) {
+  const type = phase === 'Rebuttal' ? 'disagree' : phase === 'Cross-exam' ? 'question' : 'interact';
+  const existing = edges.find(e => (e.from === fromId && e.to === toId) || (e.from === toId && e.to === fromId));
+  if (existing) {
+    existing.weight = Math.min(existing.weight + 1, 5);
+    existing.type = type;
+  } else {
+    edges.push({ from: fromId, to: toId, weight: 1, type });
+  }
+}
+
+let animFrame = 0;
+function animateGraph() {
+  animFrame++;
+  if (animFrame % 3 === 0) simulatePhysics();
+  drawGraph();
+  requestAnimationFrame(animateGraph);
+}
+
+function simulatePhysics() {
+  const ids = Object.keys(graphNodes);
+  if (!ids.length) return;
+  const cx = canvas.width / 2, cy = canvas.height / 2;
+
+  ids.forEach(id => {
+    const n = graphNodes[id];
+    // Center gravity
+    n.vx += (cx - n.x) * 0.002;
+    n.vy += (cy - n.y) * 0.002;
+    // Repulsion
+    ids.forEach(id2 => {
+      if (id2 === id) return;
+      const m = graphNodes[id2];
+      const dx = n.x - m.x, dy = n.y - m.y;
+      const d = Math.max(Math.sqrt(dx*dx + dy*dy), 1);
+      const f = 1800 / (d * d);
+      n.vx += (dx / d) * f;
+      n.vy += (dy / d) * f;
+    });
+    // Edge attraction
+    edges.forEach(e => {
+      if (e.from !== id && e.to !== id) return;
+      const otherId = e.from === id ? e.to : e.from;
+      const o = graphNodes[otherId];
+      if (!o) return;
+      const dx = o.x - n.x, dy = o.y - n.y;
+      const d = Math.max(Math.sqrt(dx*dx + dy*dy), 1);
+      const target = 90;
+      const f = (d - target) * 0.006;
+      n.vx += (dx / d) * f;
+      n.vy += (dy / d) * f;
+    });
+    n.vx *= 0.85;
+    n.vy *= 0.85;
+    n.x += n.vx;
+    n.y += n.vy;
+    // Clamp
+    n.x = Math.max(30, Math.min(canvas.width - 30, n.x));
+    n.y = Math.max(30, Math.min(canvas.height - 30, n.y));
+  });
+}
+
+function drawGraph() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (!Object.keys(graphNodes).length) {
+    ctx.fillStyle = 'rgba(136,146,176,0.25)';
+    ctx.font = '0.72rem SF Mono, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('Network appears after debate starts', canvas.width/2, canvas.height/2);
+    return;
+  }
+
+  // Edges
+  edges.forEach(e => {
+    const a = graphNodes[e.from], b = graphNodes[e.to];
+    if (!a || !b) return;
+    const colors = { disagree:'#ff6b6b', question:'#ffa94d', interact:'#64ffda' };
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.strokeStyle = colors[e.type] || '#4a5180';
+    ctx.lineWidth = Math.min(e.weight * 0.7 + 0.5, 3.5);
+    ctx.globalAlpha = 0.55;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  });
+
+  // Nodes
+  ALL_PERSONAS.filter(p => selectedIds.has(p.id)).forEach(p => {
+    const n = graphNodes[p.id];
+    if (!n) return;
+    const r = 22;
+    // Glow if active
+    const activeRow = document.getElementById('prow-' + p.id);
+    if (activeRow && activeRow.classList.contains('active')) {
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, r + 8, 0, Math.PI * 2);
+      ctx.fillStyle = p.color + '22';
+      ctx.fill();
+    }
+    // Circle
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+    ctx.fillStyle = p.bg;
+    ctx.fill();
+    ctx.strokeStyle = p.color;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    // Emoji
+    ctx.font = '14px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(p.emoji, n.x, n.y);
+    // Name label
+    ctx.font = '700 9px SF Mono, monospace';
+    ctx.fillStyle = p.color;
+    ctx.textBaseline = 'top';
+    ctx.fillText(p.name, n.x, n.y + r + 3);
+  });
+
+  // Legend
+  const lx = 8, ly = canvas.height - 52;
+  [['#64ffda','Interaction'],['#ff6b6b','Rebuttal'],['#ffa94d','Question']].forEach(([c,l], i) => {
+    ctx.beginPath();
+    ctx.moveTo(lx, ly + i * 14 + 5);
+    ctx.lineTo(lx + 16, ly + i * 14 + 5);
+    ctx.strokeStyle = c;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.font = '9px SF Mono, monospace';
+    ctx.fillStyle = 'rgba(136,146,176,0.7)';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(l, lx + 20, ly + i * 14 + 5);
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+//  SYNTHESIS
+// ══════════════════════════════════════════════════════════════
+async function runSynthesis() {
+  if (synthesisAdded) return;
+  synthesisAdded = true;
+
+  const transcript = debateLog.map(e => `[${e.personaName} — ${e.phase}]: ${e.text}`).join('\n\n');
+  const question = document.getElementById('questionInput').value.trim();
+
+  const sys = 'You are a neutral debate analyst. Return only raw JSON, no markdown fences, no extra text.';
+  const user = `Debate question: "${question}"\n\nTranscript:\n${transcript}\n\nReturn ONLY this JSON:\n{"consensus":["point1","point2","point3"],"disagreements":["point1","point2","point3"]}`;
+
+  try {
+    let raw = await plainCall(sys, user, 500);
+    raw = raw.replace(/^```[a-z]*\n?/i,'').replace(/```$/i,'').trim();
+    const data = JSON.parse(raw);
+    renderResults(data);
+    // Add synthesis edges
+    const personas = ALL_PERSONAS.filter(p => selectedIds.has(p.id));
+    for (let i = 0; i < personas.length - 1; i++) {
+      updateEdge(personas[i].id, personas[i+1].id, 'interact');
+    }
+    drawGraph();
+  } catch(e) {
+    renderResults({ consensus:['See debate above for insights.'], disagreements:[] });
+  }
+}
+
+function renderResults(data) {
+  const cb = document.getElementById('consensusBlock');
+  cb.innerHTML = '<div class="r-label">✅ Consensus</div>';
+  (data.consensus||[]).forEach(pt => {
+    const d = document.createElement('div');
+    d.className = 'r-item';
+    d.innerHTML = `<span class="r-icon-c">✓</span><span>${pt}</span>`;
+    cb.appendChild(d);
+  });
+
+  const db = document.getElementById('disagreeBlock');
+  db.innerHTML = '<div class="r-label">⚡ Disagreements</div>';
+  (data.disagreements||[]).forEach(pt => {
+    const d = document.createElement('div');
+    d.className = 'r-item';
+    d.innerHTML = `<span class="r-icon-d">⚡</span><span>${pt}</span>`;
+    db.appendChild(d);
+  });
+
+  document.getElementById('resultsSection').style.display = 'block';
+  resizeCanvas();
+}
+
+// ══════════════════════════════════════════════════════════════
+//  API CALLS
+// ══════════════════════════════════════════════════════════════
+async function streamCall(systemPrompt, userPrompt, maxTokens, onDelta) {
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: maxTokens,
+      stream: true,
+      system: systemPrompt,
+      messages: [{ role:'user', content: userPrompt }]
+    })
+  });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err.error?.message || `HTTP ${resp.status}`);
+  }
+  const reader = resp.body.getReader();
+  const dec = new TextDecoder();
+  let full = '', buf = '';
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream:true });
+    const lines = buf.split('\n');
+    buf = lines.pop();
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      const raw = line.slice(6).trim();
+      if (raw === '[DONE]') continue;
+      try {
+        const obj = JSON.parse(raw);
+        if (obj.type === 'content_block_delta' && obj.delta?.type === 'text_delta') {
+          full += obj.delta.text;
+          onDelta(full);
+        }
+      } catch { /* ignore */ }
+    }
+  }
+  return full;
+}
+
+async function plainCall(systemPrompt, userPrompt, maxTokens) {
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: maxTokens,
+      system: systemPrompt,
+      messages: [{ role:'user', content: userPrompt }]
+    })
+  });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err.error?.message || `HTTP ${resp.status}`);
+  }
+  const data = await resp.json();
+  return data.content?.[0]?.text || '';
+}
+
+// ══════════════════════════════════════════════════════════════
+init();
+</script>
+</body>
+</html>
