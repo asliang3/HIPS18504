@@ -430,9 +430,22 @@
   <div class="panel-left">
 
     <div>
+      <div class="panel-section-title">Provider</div>
+      <div class="presets">
+        <select id="providerSelect" onchange="onProviderChange()">
+          <option value="openai">OpenAI (GPT-4o mini)</option>
+          <option value="anthropic">Anthropic (Claude Haiku)</option>
+        </select>
+      </div>
+    </div>
+
+    <div>
       <div class="panel-section-title">API Key</div>
       <div class="key-row">
         <input type="password" id="apiKeyInput" placeholder="sk-…" />
+      </div>
+      <div style="font-size:0.65rem;color:var(--text-muted);margin-top:5px" id="keyHint">
+        Get yours at <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener" style="color:var(--accent2)">platform.openai.com</a>
       </div>
     </div>
 
@@ -552,6 +565,7 @@ const ALL_PERSONAS = [
 //  STATE
 // ══════════════════════════════════════════════════════════════
 let apiKey = '';
+let provider = 'openai'; // 'openai' | 'anthropic'
 let selectedIds = new Set(['alex','morgan','jordan','sam','taylor','riley']);
 let debateSteps = [];   // {personaId, phase, text, systemPrompt, userPrompt, maxTokens}
 let currentStep = -1;
@@ -569,6 +583,7 @@ const graphNodes = {}; // id → {x,y,vx,vy}
 // ══════════════════════════════════════════════════════════════
 function init() {
   renderPersonaList();
+  document.getElementById('providerSelect').addEventListener('change', onProviderChange);
   document.getElementById('apiKeyInput').addEventListener('input', onKeyChange);
   document.getElementById('questionInput').addEventListener('input', updateStart);
   document.getElementById('speedSlider').addEventListener('input', () => {
@@ -579,9 +594,22 @@ function init() {
   initGraph();
 }
 
+function onProviderChange() {
+  provider = document.getElementById('providerSelect').value;
+  const hints = {
+    openai:     'Get yours at <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener" style="color:var(--accent2)">platform.openai.com</a>',
+    anthropic:  'Get yours at <a href="https://console.anthropic.com" target="_blank" rel="noopener" style="color:var(--accent2)">console.anthropic.com</a>'
+  };
+  const placeholders = { openai: 'sk-…', anthropic: 'sk-ant-api03-…' };
+  document.getElementById('keyHint').innerHTML = hints[provider];
+  document.getElementById('apiKeyInput').placeholder = placeholders[provider];
+  onKeyChange();
+}
+
 function onKeyChange() {
   apiKey = document.getElementById('apiKeyInput').value.trim();
-  document.getElementById('apiKeyInput').classList.toggle('ok', apiKey.startsWith('sk-'));
+  const valid = provider === 'anthropic' ? apiKey.startsWith('sk-ant-') : apiKey.startsWith('sk-');
+  document.getElementById('apiKeyInput').classList.toggle('ok', valid);
   updateStart();
 }
 
@@ -1132,26 +1160,19 @@ function renderResults(data) {
 //  API CALLS
 // ══════════════════════════════════════════════════════════════
 async function streamCall(systemPrompt, userPrompt, maxTokens, onDelta) {
+  if (provider === 'anthropic') {
+    return streamCallAnthropic(systemPrompt, userPrompt, maxTokens, onDelta);
+  }
+  // OpenAI
   const resp = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + apiKey
-    },
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
     body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      max_tokens: maxTokens,
-      stream: true,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user',   content: userPrompt }
-      ]
+      model: 'gpt-4o-mini', max_tokens: maxTokens, stream: true,
+      messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }]
     })
   });
-  if (!resp.ok) {
-    const err = await resp.json().catch(() => ({}));
-    throw new Error(err.error?.message || `HTTP ${resp.status}`);
-  }
+  if (!resp.ok) { const e = await resp.json().catch(()=>({})); throw new Error(e.error?.message || `HTTP ${resp.status}`); }
   const reader = resp.body.getReader();
   const dec = new TextDecoder();
   let full = '', buf = '';
@@ -1159,8 +1180,7 @@ async function streamCall(systemPrompt, userPrompt, maxTokens, onDelta) {
     const { done, value } = await reader.read();
     if (done) break;
     buf += dec.decode(value, { stream: true });
-    const lines = buf.split('\n');
-    buf = lines.pop();
+    const lines = buf.split('\n'); buf = lines.pop();
     for (const line of lines) {
       if (!line.startsWith('data: ')) continue;
       const raw = line.slice(6).trim();
@@ -1168,9 +1188,45 @@ async function streamCall(systemPrompt, userPrompt, maxTokens, onDelta) {
       try {
         const obj = JSON.parse(raw);
         const delta = obj.choices?.[0]?.delta?.content;
-        if (delta) {
-          full += delta;
-          onDelta(full);
+        if (delta) { full += delta; onDelta(full); }
+      } catch { /* ignore */ }
+    }
+  }
+  return full;
+}
+
+async function streamCallAnthropic(systemPrompt, userPrompt, maxTokens, onDelta) {
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001', max_tokens: maxTokens, stream: true,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userPrompt }]
+    })
+  });
+  if (!resp.ok) { const e = await resp.json().catch(()=>({})); throw new Error(e.error?.message || `HTTP ${resp.status}`); }
+  const reader = resp.body.getReader();
+  const dec = new TextDecoder();
+  let full = '', buf = '';
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    const lines = buf.split('\n'); buf = lines.pop();
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      const raw = line.slice(6).trim();
+      if (raw === '[DONE]') continue;
+      try {
+        const obj = JSON.parse(raw);
+        if (obj.type === 'content_block_delta' && obj.delta?.type === 'text_delta') {
+          full += obj.delta.text; onDelta(full);
         }
       } catch { /* ignore */ }
     }
@@ -1179,25 +1235,35 @@ async function streamCall(systemPrompt, userPrompt, maxTokens, onDelta) {
 }
 
 async function plainCall(systemPrompt, userPrompt, maxTokens) {
+  if (provider === 'anthropic') {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001', max_tokens: maxTokens,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userPrompt }]
+      })
+    });
+    if (!resp.ok) { const e = await resp.json().catch(()=>({})); throw new Error(e.error?.message || `HTTP ${resp.status}`); }
+    const data = await resp.json();
+    return data.content?.[0]?.text || '';
+  }
+  // OpenAI
   const resp = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + apiKey
-    },
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
     body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      max_tokens: maxTokens,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user',   content: userPrompt }
-      ]
+      model: 'gpt-4o-mini', max_tokens: maxTokens,
+      messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }]
     })
   });
-  if (!resp.ok) {
-    const err = await resp.json().catch(() => ({}));
-    throw new Error(err.error?.message || `HTTP ${resp.status}`);
-  }
+  if (!resp.ok) { const e = await resp.json().catch(()=>({})); throw new Error(e.error?.message || `HTTP ${resp.status}`); }
   const data = await resp.json();
   return data.choices?.[0]?.message?.content || '';
 }
