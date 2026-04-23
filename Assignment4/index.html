@@ -419,7 +419,7 @@
   <div class="logo">🧠</div>
   <div class="logo-text">
     <h1>MANY-MINDS DEBATE ENGINE</h1>
-    <p>Six AI personas · step-by-step · live network graph</p>
+    <p>Six AI personas · step-by-step · live network graph · powered by GPT-4o mini</p>
   </div>
   <a href="../index.html" class="back-link">← back</a>
 </header>
@@ -432,7 +432,7 @@
     <div>
       <div class="panel-section-title">API Key</div>
       <div class="key-row">
-        <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-…" />
+        <input type="password" id="apiKeyInput" placeholder="sk-…" />
       </div>
     </div>
 
@@ -581,7 +581,7 @@ function init() {
 
 function onKeyChange() {
   apiKey = document.getElementById('apiKeyInput').value.trim();
-  document.getElementById('apiKeyInput').classList.toggle('ok', apiKey.startsWith('sk-ant-'));
+  document.getElementById('apiKeyInput').classList.toggle('ok', apiKey.startsWith('sk-'));
   updateStart();
 }
 
@@ -1132,20 +1132,20 @@ function renderResults(data) {
 //  API CALLS
 // ══════════════════════════════════════════════════════════════
 async function streamCall(systemPrompt, userPrompt, maxTokens, onDelta) {
-  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+  const resp = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
+      'Authorization': 'Bearer ' + apiKey
     },
     body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
+      model: 'gpt-4o-mini',
       max_tokens: maxTokens,
       stream: true,
-      system: systemPrompt,
-      messages: [{ role:'user', content: userPrompt }]
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user',   content: userPrompt }
+      ]
     })
   });
   if (!resp.ok) {
@@ -1158,7 +1158,7 @@ async function streamCall(systemPrompt, userPrompt, maxTokens, onDelta) {
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
-    buf += dec.decode(value, { stream:true });
+    buf += dec.decode(value, { stream: true });
     const lines = buf.split('\n');
     buf = lines.pop();
     for (const line of lines) {
@@ -1167,8 +1167,9 @@ async function streamCall(systemPrompt, userPrompt, maxTokens, onDelta) {
       if (raw === '[DONE]') continue;
       try {
         const obj = JSON.parse(raw);
-        if (obj.type === 'content_block_delta' && obj.delta?.type === 'text_delta') {
-          full += obj.delta.text;
+        const delta = obj.choices?.[0]?.delta?.content;
+        if (delta) {
+          full += delta;
           onDelta(full);
         }
       } catch { /* ignore */ }
@@ -1178,19 +1179,19 @@ async function streamCall(systemPrompt, userPrompt, maxTokens, onDelta) {
 }
 
 async function plainCall(systemPrompt, userPrompt, maxTokens) {
-  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+  const resp = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
+      'Authorization': 'Bearer ' + apiKey
     },
     body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
+      model: 'gpt-4o-mini',
       max_tokens: maxTokens,
-      system: systemPrompt,
-      messages: [{ role:'user', content: userPrompt }]
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user',   content: userPrompt }
+      ]
     })
   });
   if (!resp.ok) {
@@ -1198,7 +1199,7 @@ async function plainCall(systemPrompt, userPrompt, maxTokens) {
     throw new Error(err.error?.message || `HTTP ${resp.status}`);
   }
   const data = await resp.json();
-  return data.content?.[0]?.text || '';
+  return data.choices?.[0]?.message?.content || '';
 }
 
 // ══════════════════════════════════════════════════════════════
