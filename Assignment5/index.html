@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CCS 2026 — Recombination Museum</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ============================================================
+     HEADER
+     ============================================================ -->
+<header id="header">
+  <div id="header-title">
+    CCS 2026<span>›</span>Recombination Museum
+  </div>
+
+  <input type="text" id="search-bar"
+    placeholder="Search concepts, authors, tensions…"
+    autocomplete="off" spellcheck="false">
+
+  <div id="header-actions">
+    <button class="btn" id="btn-shuffle" title="Rearrange readings by a random lens">⟳ Shuffle</button>
+    <button class="btn" id="btn-contradiction" title="Contradiction mode: paired readings in tension">⚡ Contradictions</button>
+    <button class="btn" id="btn-ghosts" title="Ghosts of computation: recurring themes">👻 Ghosts</button>
+  </div>
+</header>
+
+<!-- ============================================================
+     APP LAYOUT
+     ============================================================ -->
+<div id="app">
+
+  <!-- ---- LEFT PANEL ---------------------------------------- -->
+  <nav id="left-panel">
+    <div id="panel-tabs">
+      <button class="panel-tab active" data-tab="lenses">Lenses</button>
+      <button class="panel-tab" data-tab="rooms">Rooms</button>
+      <button class="panel-tab" data-tab="trails">Trails</button>
+    </div>
+
+    <div id="panel-content">
+
+      <!-- LENSES TAB -->
+      <div class="panel-section" data-section="lenses">
+        <!-- Populated by renderLensPanel() -->
+      </div>
+
+      <!-- ROOMS TAB -->
+      <div class="panel-section" data-section="rooms" style="display:none">
+        <!-- Populated by renderRoomPanel() -->
+      </div>
+
+      <!-- TRAILS TAB -->
+      <div class="panel-section" data-section="trails" style="display:none">
+        <!-- Populated by renderTrailList() -->
+      </div>
+
+    </div>
+  </nav>
+
+  <!-- ---- MAIN STAGE ---------------------------------------- -->
+  <main id="main-stage">
+
+    <!-- MAP VIEW -->
+    <div id="map-view" class="view active">
+      <canvas id="constellation-canvas"></canvas>
+      <div id="map-nodes"></div>
+
+      <!-- Map legend — populated by renderMapLegend() -->
+      <div id="map-legend" style="position:absolute; bottom:12px; right:12px; font-family:var(--font-mono); font-size:10px; color:var(--text-dim); text-align:right; pointer-events:none; line-height:1.9; background:rgba(14,14,18,0.7); padding:8px 10px; border-radius:3px; border:1px solid var(--border)"></div>
+
+      <!-- Lens indicator -->
+      <div id="map-lens-indicator" style="position:absolute; top:12px; left:12px; font-family:var(--font-mono); font-size:10px; color:var(--amber-dim); letter-spacing:0.1em; text-transform:uppercase; pointer-events:none">
+        <!-- updated dynamically -->
+      </div>
+    </div>
+
+    <!-- LENS VIEW -->
+    <div id="lens-view" class="view">
+      <!-- Populated by renderLensView() -->
+    </div>
+
+    <!-- ROOMS VIEW -->
+    <div id="rooms-view" class="view">
+      <!-- Populated by renderRoomsView() -->
+    </div>
+
+  </main>
+
+  <!-- ---- DETAIL PANEL -------------------------------------- -->
+  <aside id="detail-panel" class="hidden">
+    <div id="detail-header">
+      <div>
+        <div style="font-family:var(--font-mono); font-size:10px; color:var(--text-dim); letter-spacing:0.1em; text-transform:uppercase" id="detail-type-label">Reading</div>
+      </div>
+      <button id="detail-close" title="Close">✕</button>
+    </div>
+    <div id="detail-content">
+      <!-- Populated dynamically -->
+      <div style="color:var(--text-dim); font-size:13px; padding:20px 0; text-align:center; line-height:1.7">
+        <div style="font-size:24px; margin-bottom:12px; color:var(--border2)">◈</div>
+        Select a reading, room, or trail<br>to explore its connections.
+      </div>
+    </div>
+  </aside>
+
+</div><!-- /#app -->
+
+<!-- ============================================================
+     MODE OVERLAY (Contradiction / Ghosts)
+     ============================================================ -->
+<div id="mode-overlay"></div>
+
+<!-- Toast notification -->
+<div id="toast"></div>
+
+<!-- ============================================================
+     ABOUT PANEL (hidden by default, keyboard shortcut ?)
+     ============================================================ -->
+<div id="about-overlay" style="display:none; position:fixed; inset:0; background:rgba(14,14,18,0.92); z-index:200; justify-content:center; align-items:center;">
+  <div style="max-width:560px; width:90%; background:var(--bg2); border:1px solid var(--border2); border-radius:3px; padding:32px; overflow-y:auto; max-height:80vh;">
+    <div style="font-size:20px; color:var(--amber2); margin-bottom:8px">Recombination Museum</div>
+    <div style="font-family:var(--font-mono); font-size:10px; color:var(--text-dim); letter-spacing:0.1em; text-transform:uppercase; margin-bottom:20px">
+      Computation, Culture & Society 2026 · Prof. James A. Evans · UChicago
+    </div>
+    <p style="font-size:13px; color:var(--text); line-height:1.6; margin-bottom:14px">
+      This is not a memory palace of the syllabus. It is a <em>machine for re-sorting it</em>.
+      Inspired by Vannevar Bush's memex and Douglas Engelbart's augmented intelligence program,
+      this tool helps you construct associative trails across course materials—noticing connections
+      the weekly calendar conceals.
+    </p>
+    <p style="font-size:13px; color:var(--text); line-height:1.6; margin-bottom:20px">
+      <strong style="color:var(--amber2)">Lenses</strong> reorganize the same readings through different conceptual frames.
+      <strong style="color:var(--amber2)">Rooms</strong> are cross-week thematic groupings.
+      <strong style="color:var(--amber2)">Trails</strong> are associative paths through the course—you can build your own.
+      <strong style="color:var(--amber2)">Contradictions</strong> pairs readings in productive tension.
+      <strong style="color:var(--amber2)">Ghosts</strong> shows recurring themes haunting the course.
+    </p>
+    <div style="font-family:var(--font-mono); font-size:11px; color:var(--text-dim); line-height:2">
+      <div><kbd style="background:var(--bg3);border:1px solid var(--border);padding:1px 6px;border-radius:2px">?</kbd> Toggle this panel</div>
+      <div><kbd style="background:var(--bg3);border:1px solid var(--border);padding:1px 6px;border-radius:2px">Esc</kbd> Close overlays</div>
+    </div>
+    <button class="btn" style="margin-top:20px" onclick="document.getElementById('about-overlay').style.display='none'">Close</button>
+  </div>
+</div>
+
+<!-- ============================================================
+     SCRIPTS
+     ============================================================ -->
+<script src="data.js"></script>
+<script src="script.js"></script>
+
+<script>
+  // Keyboard shortcuts
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      closeOverlay();
+      document.getElementById('about-overlay').style.display = 'none';
+    }
+    if (e.key === '?' && !e.target.matches('input')) {
+      const a = document.getElementById('about-overlay');
+      a.style.display = a.style.display === 'none' ? 'flex' : 'none';
+    }
+  });
+
+  // Update map lens indicator on lens change — hooked via MutationObserver on the lens-btn
+  document.addEventListener('click', e => {
+    const lensBtn = e.target.closest('[data-lens]');
+    if (lensBtn) {
+      const el = document.getElementById('map-lens-indicator');
+      const id = lensBtn.dataset.lens;
+      if (el && LENSES[id]) el.textContent = 'Lens: ' + LENSES[id].name;
+    }
+  });
+
+  // Set initial lens label after init runs
+  setTimeout(() => {
+    const el = document.getElementById('map-lens-indicator');
+    if (el && LENSES[STATE.currentLens]) el.textContent = 'Lens: ' + LENSES[STATE.currentLens].name;
+  }, 100);
+</script>
+
+</body>
+</html>
