@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>✨ MySpace Time Machine ✨</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap');
+
+    :root {
+      --hot-pink: #ff00cc;
+      --electric: #00ffff;
+      --lime:     #aaff00;
+      --orange:   #ff6600;
+      --purple:   #cc00ff;
+      --yellow:   #ffff00;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: #000;
+      background-image:
+        radial-gradient(ellipse at 20% 30%, #1a003a 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 70%, #003a1a 0%, transparent 60%),
+        url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      font-family: 'Fredoka One', 'Comic Sans MS', cursive, sans-serif;
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow-x: hidden;
+    }
+
+    /* ── Scrolling ticker ── */
+    .ticker-wrap {
+      width: 100%;
+      background: var(--hot-pink);
+      padding: 6px 0;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+    .ticker {
+      display: inline-block;
+      animation: ticker 22s linear infinite;
+      font-size: 0.9rem;
+      letter-spacing: 2px;
+      color: #000;
+    }
+    @keyframes ticker {
+      from { transform: translateX(100vw); }
+      to   { transform: translateX(-100%); }
+    }
+
+    /* ── Twinkling stars ── */
+    .stars {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .star {
+      position: absolute;
+      width: 3px; height: 3px;
+      background: #fff;
+      border-radius: 50%;
+      animation: twinkle var(--d, 3s) ease-in-out infinite alternate;
+      opacity: 0.7;
+    }
+    @keyframes twinkle {
+      from { opacity: 0.1; transform: scale(0.8); }
+      to   { opacity: 1;   transform: scale(1.5); }
+    }
+
+    /* ── Main card ── */
+    .card {
+      position: relative;
+      z-index: 1;
+      margin: 40px 20px 20px;
+      max-width: 660px;
+      width: 100%;
+      border: 3px solid var(--electric);
+      border-radius: 16px;
+      background: rgba(0, 0, 20, 0.88);
+      padding: 36px 32px 32px;
+      box-shadow:
+        0 0 30px var(--electric),
+        0 0 80px rgba(0,255,255,0.1),
+        inset 0 0 40px rgba(0,255,255,0.04);
+      text-align: center;
+    }
+
+    .rainbow-title {
+      font-size: clamp(2rem, 7vw, 3.4rem);
+      line-height: 1.15;
+      background: linear-gradient(90deg,
+        var(--hot-pink), var(--orange), var(--yellow),
+        var(--lime), var(--electric), var(--purple), var(--hot-pink));
+      background-size: 300% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: rainbow-shift 4s linear infinite;
+    }
+    @keyframes rainbow-shift {
+      from { background-position: 0%;   }
+      to   { background-position: 300%; }
+    }
+
+    .subtitle {
+      margin-top: 10px;
+      font-size: 1rem;
+      color: var(--electric);
+      letter-spacing: 1px;
+    }
+
+    .divider {
+      margin: 24px auto;
+      border: none;
+      height: 2px;
+      width: 80%;
+      background: linear-gradient(90deg,
+        transparent, var(--hot-pink), var(--electric), transparent);
+    }
+
+    .description {
+      font-size: 0.95rem;
+      line-height: 1.8;
+      color: #ccc;
+      font-family: 'Trebuchet MS', sans-serif;
+      margin-bottom: 28px;
+    }
+    .description b { color: var(--lime); }
+
+    /* ── Big button ── */
+    .btn {
+      display: inline-block;
+      cursor: pointer;
+      border: none;
+      padding: 18px 48px;
+      border-radius: 50px;
+      font-family: 'Fredoka One', cursive;
+      font-size: 1.5rem;
+      letter-spacing: 1px;
+      color: #000;
+      background: linear-gradient(135deg, var(--hot-pink), var(--orange), var(--yellow));
+      background-size: 200% auto;
+      box-shadow: 0 0 20px var(--hot-pink), 0 4px 16px rgba(0,0,0,0.5);
+      transition: transform 0.15s, box-shadow 0.15s;
+      animation: pulse-btn 2.4s ease-in-out infinite;
+      text-decoration: none;
+    }
+    .btn:hover {
+      transform: scale(1.07);
+      box-shadow: 0 0 50px var(--hot-pink), 0 0 90px var(--orange);
+      animation: none;
+    }
+    .btn:active { transform: scale(0.96); }
+    @keyframes pulse-btn {
+      0%, 100% { box-shadow: 0 0 20px var(--hot-pink), 0 4px 16px rgba(0,0,0,0.5); }
+      50%       { box-shadow: 0 0 55px var(--hot-pink), 0 0 90px var(--orange);     }
+    }
+
+    /* ── Destination preview ── */
+    .destination {
+      margin-top: 18px;
+      font-size: 0.82rem;
+      color: #555;
+      font-family: monospace;
+      min-height: 1.2em;
+      transition: color 0.3s;
+    }
+    .destination.active { color: var(--lime); }
+
+    /* ── Visitor counter ── */
+    .counter-badge {
+      display: inline-block;
+      margin-top: 18px;
+      background: #000;
+      border: 2px solid var(--yellow);
+      border-radius: 6px;
+      padding: 4px 16px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+      color: var(--yellow);
+      letter-spacing: 3px;
+      text-shadow: 0 0 8px var(--yellow);
+    }
+
+    /* ── Hall of fame ── */
+    .profiles-section {
+      position: relative;
+      z-index: 1;
+      max-width: 660px;
+      width: 100%;
+      margin: 0 20px 20px;
+      border: 2px solid rgba(170, 255, 0, 0.3);
+      border-radius: 12px;
+      background: rgba(0, 0, 10, 0.75);
+      padding: 22px 24px;
+    }
+    .profiles-section h2 {
+      color: var(--lime);
+      font-size: 1.05rem;
+      margin-bottom: 14px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+    .profiles-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+      gap: 8px;
+    }
+    .profile-link {
+      display: block;
+      padding: 9px 13px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 8px;
+      color: var(--electric);
+      text-decoration: none;
+      font-size: 0.8rem;
+      font-family: monospace;
+      transition: background 0.2s, border-color 0.2s, color 0.2s;
+    }
+    .profile-link:hover {
+      background: rgba(0,255,255,0.11);
+      border-color: var(--electric);
+      color: #fff;
+    }
+    .profile-link .label {
+      display: block;
+      font-family: 'Fredoka One', cursive;
+      font-size: 0.88rem;
+      color: #fff;
+      margin-bottom: 2px;
+    }
+    .profile-link .vibe {
+      font-size: 0.72rem;
+      color: var(--hot-pink);
+      font-family: 'Trebuchet MS', sans-serif;
+      font-style: italic;
+    }
+
+    /* ── Footer ── */
+    footer {
+      position: relative;
+      z-index: 1;
+      padding: 20px;
+      font-size: 0.75rem;
+      color: #444;
+      text-align: center;
+      font-family: monospace;
+    }
+    footer span { color: var(--hot-pink); }
+  </style>
+</head>
+<body>
+
+  <div class="stars" id="stars"></div>
+
+  <div class="ticker-wrap">
+    <span class="ticker">
+      ✨ WELCOME TO MY PAGE ✨ &nbsp;&nbsp;&nbsp;
+      YOU ARE VISITOR #1,337,042 &nbsp;&nbsp;&nbsp;
+      🌈 INFORMATION WANTS TO BE FREE &nbsp;&nbsp;&nbsp;
+      ADD ME TO YOUR TOP 8!! &nbsp;&nbsp;&nbsp;
+      🎵 NOW PLAYING: Mr. Brightside &nbsp;&nbsp;&nbsp;
+      🌐 THE NET INTERPRETS CENSORSHIP AS DAMAGE &amp; ROUTES AROUND IT 🌐 &nbsp;&nbsp;&nbsp;
+      💾 CYBERSPACE: HOME OF MIND &nbsp;&nbsp;&nbsp;
+      🌸 THE INTERNET IS FOR EVERYONE 🌸 &nbsp;&nbsp;&nbsp;
+      ✨ WELCOME TO MY PAGE ✨ &nbsp;&nbsp;&nbsp;
+    </span>
+  </div>
+
+  <div class="card">
+    <h1 class="rainbow-title">✨ MySpace<br>Time Machine ✨</h1>
+    <p class="subtitle">~ beam me back to 2007 ~</p>
+    <hr class="divider" />
+    <p class="description">
+      The internet used to be <b>weird, wonderful, and FREE.</b><br>
+      Glitter text. Tiled backgrounds. Autoplay songs you didn't ask for.<br>
+      <b>A place where anyone could be anything.</b><br><br>
+      These are real archived pages from the Wayback Machine —<br>
+      the actual web as it existed. Hit the button and teleport there.
+    </p>
+
+    <button class="btn" id="mainBtn" onclick="goRandom()">🚀 TAKE ME THERE</button>
+
+    <div class="destination" id="dest">hover or click to see where you're headed...</div>
+    <div class="counter-badge" id="counter">00000001</div>
+  </div>
+
+  <div class="profiles-section">
+    <h2>✦ Hall of Fame Profiles ✦</h2>
+    <p style="font-size:0.72rem;color:#666;font-family:monospace;margin-bottom:12px;">
+      all links open real Wayback Machine snapshots from 2007–2012
+    </p>
+    <div class="profiles-grid" id="profileGrid"></div>
+  </div>
+
+  <div class="profiles-section" style="margin-top:0;">
+    <h2>✦ The Roots — Early Web Culture ✦</h2>
+    <p style="font-size:0.72rem;color:#666;font-family:monospace;margin-bottom:12px;">
+      the hippie-programmer utopian dream that made MySpace possible
+    </p>
+    <div class="profiles-grid" id="cultureGrid"></div>
+  </div>
+
+  <footer>
+    built with <span>♥</span> &amp; nostalgia &nbsp;|&nbsp;
+    no Flash Player required (sadly) &nbsp;|&nbsp;
+    <span>✦</span> the web was better when it sparkled <span>✦</span>
+  </footer>
+
+  <script>
+    // All URLs are Wayback Machine snapshots of the actual pages as they existed (peak era: 2007-2012)
+    const profiles = [
+      // ── The OG ──
+      { label: "Tom Anderson",
+        url: "https://web.archive.org/web/20090911175151/http://www.myspace.com/tomanderson",
+        vibe: "your very first friend · Sep 2009" },
+
+      // ── MySpace celebrities — peak visual chaos ──
+      { label: "Jeffree Star",
+        url: "https://web.archive.org/web/20070911053203/http://myspace.com:80/jeffreestar",
+        vibe: "neon glitter scene royalty · Sep 2007" },
+      { label: "Tila Tequila",
+        url: "https://web.archive.org/web/20070607023711/http://www.myspace.com/TilaTequila",
+        vibe: "the original MySpace celebrity · Jun 2007" },
+      { label: "Blood on the Dance Floor",
+        url: "https://web.archive.org/web/20090715003743/http://www.myspace.com:80/bloodonthedancefloor",
+        vibe: "maximalist scene band · Jul 2009" },
+
+      // ── Pop ──
+      { label: "Katy Perry",
+        url: "https://web.archive.org/web/20071130141600/http://www.myspace.com/katyperry",
+        vibe: "I Kissed a Girl era · Nov 2007" },
+      { label: "Lady Gaga",
+        url: "https://web.archive.org/web/20080704000335/http://www.myspace.com:80/ladygaga",
+        vibe: "Just Dance era · Jul 2008" },
+      { label: "Taylor Swift — Fearless",
+        url: "https://web.archive.org/web/20090114213958/http://www.myspace.com:80/taylorswift",
+        vibe: "Fearless era · Jan 2009" },
+      { label: "Taylor Swift — Speak Now",
+        url: "https://web.archive.org/web/20100116161608/http://www.myspace.com:80/taylorswift",
+        vibe: "Speak Now promo · Jan 2010" },
+      { label: "Taylor Swift — Red",
+        url: "https://web.archive.org/web/20120127133430/http://www.myspace.com/taylorswift",
+        vibe: "Red era · Jan 2012" },
+      { label: "Beyoncé",
+        url: "https://web.archive.org/web/20070312160757/http://myspace.com:80/Beyonce",
+        vibe: "B'Day era · Mar 2007" },
+      { label: "Rihanna",
+        url: "https://web.archive.org/web/20070328145749/http://www.myspace.com:80/rihanna",
+        vibe: "Good Girl Gone Bad era · Mar 2007" },
+
+      // ── Hip-hop ──
+      { label: "Soulja Boy",
+        url: "https://web.archive.org/web/20070815183952/http://www.myspace.com/souljaboytellem",
+        vibe: "Crank That broke here first · Aug 2007" },
+      { label: "Kanye West",
+        url: "https://web.archive.org/web/20070531132205/http://myspace.com:80/kanyewest",
+        vibe: "Graduation era · May 2007" },
+      { label: "Lil Wayne",
+        url: "https://web.archive.org/web/20070821185947/http://myspace.com:80/lilwayne",
+        vibe: "Tha Carter III hype · Aug 2007" },
+
+      // ── Rock / Emo ──
+      { label: "My Chemical Romance",
+        url: "https://web.archive.org/web/20070620183901/http://myspace.com/mychemicalromance",
+        vibe: "The Black Parade era · Jun 2007" },
+      { label: "Fall Out Boy",
+        url: "https://web.archive.org/web/20070418193923/http://www.myspace.com/falloutboy",
+        vibe: "Infinity on High era · Apr 2007" },
+      { label: "Paramore",
+        url: "https://web.archive.org/web/20070417013450/http://myspace.com:80/paramore",
+        vibe: "Riot! era · Apr 2007" },
+      { label: "Arctic Monkeys",
+        url: "https://web.archive.org/web/20070709024500/http://www.myspace.com/arcticmonkeys",
+        vibe: "Favourite Worst Nightmare · Jul 2007" },
+      { label: "The Killers",
+        url: "https://web.archive.org/web/20070502185605/http://myspace.com/thekillers",
+        vibe: "Sam's Town era · May 2007" },
+      { label: "Nine Inch Nails",
+        url: "https://web.archive.org/web/20070605205350/http://myspace.com:80/nineinchnails",
+        vibe: "Year Zero era · Jun 2007" },
+      { label: "Owl City",
+        url: "https://web.archive.org/web/20080522112427/http://www.myspace.com/owlcity",
+        vibe: "fireflies in your feed · May 2008" },
+
+      // ── Late MySpace / 2009–2012 ──
+      { label: "Justin Bieber",
+        url: "https://web.archive.org/web/20090103165050/http://www.myspace.com:80/justinbieber",
+        vibe: "before the world knew · Jan 2009" },
+      { label: "Nicki Minaj",
+        url: "https://web.archive.org/web/20090129094419/http://www.myspace.com:80/NickiMinaj",
+        vibe: "mixtape grind era · Jan 2009" },
+      { label: "Kesha",
+        url: "https://web.archive.org/web/20090222124259/http://www.myspace.com:80/kesha",
+        vibe: "Tik Tok pre-release · Feb 2009" },
+      { label: "Skrillex (Sonny Moore)",
+        url: "https://web.archive.org/web/20090106034848/http://www.myspace.com:80/sonnymoore",
+        vibe: "before the drop · Jan 2009" },
+      { label: "Deadmau5",
+        url: "https://web.archive.org/web/20090113123408/http://www.myspace.com:80/deadmau5",
+        vibe: "blog house peak · Jan 2009" },
+      { label: "Drake",
+        url: "https://web.archive.org/web/20090202125502/http://www.myspace.com:80/drake",
+        vibe: "So Far Gone mixtape · Feb 2009" },
+      { label: "Eminem",
+        url: "https://web.archive.org/web/20090101175951/http://www.myspace.com:80/eminem",
+        vibe: "Relapse comeback · Jan 2009" },
+      { label: "Adele",
+        url: "https://web.archive.org/web/20111003031409/http://www.myspace.com:80/adele",
+        vibe: "21 era · Oct 2011" },
+      { label: "Jonas Brothers",
+        url: "https://web.archive.org/web/20090103164019/http://www.myspace.com:80/jonasbrothers",
+        vibe: "peak Disney chaos · Jan 2009" },
+      { label: "Demi Lovato",
+        url: "https://web.archive.org/web/20090102005635/http://www.myspace.com:80/demilovato",
+        vibe: "Camp Rock era · Jan 2009" },
+      { label: "Selena Gomez",
+        url: "https://web.archive.org/web/20090113130509/http://www.myspace.com:80/selenagomez",
+        vibe: "Wizards of Waverly era · Jan 2009" },
+    ];
+
+    const culture = [
+      { label: "The WELL",
+        url: "https://web.archive.org/web/20030205100754/http://www.well.com:80/",
+        vibe: "the original online community · 2003" },
+      { label: "Declaration of Cyberspace",
+        url: "https://web.archive.org/web/20030207052642/http://www.eff.org:80/~barlow/Declaration-Final.html",
+        vibe: "Barlow's 1996 manifesto · EFF archive" },
+      { label: "Wired Magazine",
+        url: "https://web.archive.org/web/20030217213453/http://wired.com:80/",
+        vibe: "the bible of the digital revolution · 2003" },
+      { label: "Burning Man",
+        url: "https://web.archive.org/web/20060427173125/http://www.burningman.org:80/",
+        vibe: "radical self-reliance &amp; gifting · 2006" },
+      { label: "Grateful Dead Net",
+        url: "https://web.archive.org/web/20031124182917/http://www.grateful-dead.net:80/",
+        vibe: "tapers &amp; free culture · Nov 2003" },
+    ];
+
+    function buildGrid(containerId, items) {
+      const grid = document.getElementById(containerId);
+      items.forEach(p => {
+        const a = document.createElement("a");
+        a.className = "profile-link";
+        a.href = p.url;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        a.innerHTML =
+          `<span class="label">${p.label}</span>` +
+          `<span class="vibe">${p.vibe}</span>`;
+        grid.appendChild(a);
+      });
+    }
+
+    buildGrid("profileGrid", profiles);
+    buildGrid("cultureGrid", culture);
+
+    const allSites = [...profiles, ...culture];
+
+    function goRandom() {
+      const pick = allSites[Math.floor(Math.random() * allSites.length)];
+      showDest(pick);
+      bumpCounter();
+      setTimeout(() => window.open(pick.url, "_blank", "noopener,noreferrer"), 420);
+    }
+
+    function showDest(pick) {
+      const el = document.getElementById("dest");
+      el.textContent = "✈ warping to: " + pick.label + " (Wayback Machine)";
+      el.classList.add("active");
+    }
+
+    document.getElementById("mainBtn").addEventListener("mouseenter", () => {
+      const pick = allSites[Math.floor(Math.random() * allSites.length)];
+      showDest(pick);
+    });
+
+    // Visitor counter (localStorage)
+    let visits = parseInt(localStorage.getItem("ms_tm_visits") || "1");
+    function bumpCounter() {
+      visits++;
+      localStorage.setItem("ms_tm_visits", visits);
+      document.getElementById("counter").textContent = String(visits).padStart(8, "0");
+    }
+    document.getElementById("counter").textContent = String(visits).padStart(8, "0");
+
+    // Stars
+    const starsEl = document.getElementById("stars");
+    for (let i = 0; i < 130; i++) {
+      const s = document.createElement("div");
+      s.className = "star";
+      s.style.left = Math.random() * 100 + "vw";
+      s.style.top  = Math.random() * 100 + "vh";
+      s.style.setProperty("--d", (1.5 + Math.random() * 4).toFixed(1) + "s");
+      s.style.animationDelay = (Math.random() * 5).toFixed(1) + "s";
+      starsEl.appendChild(s);
+    }
+  </script>
+</body>
+</html>
