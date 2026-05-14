@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generalized Coupon Collector - Chess Pieces</title>
+    <script>
+        MathJax = {
+            tex: { inlineMath: [['$','$']], displayMath: [['$$','$$']] },
+            options: { skipHtmlTags: ['script','noscript','style','textarea'] }
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border: 2px solid #e9ecef;
+        }
+
+        .section-title {
+            color: #667eea;
+            font-size: 1.5em;
+            margin-bottom: 15px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .formula-box {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 5px solid #667eea;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+        }
+
+        .formula {
+            font-size: 1.1em;
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        .chess-pieces {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .piece-card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            border: 2px solid #dee2e6;
+            transition: all 0.3s ease;
+        }
+
+        .piece-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .piece-icon {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+
+        .piece-name {
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .piece-count {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .piece-needed {
+            color: #28a745;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s ease;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        button {
+            padding: 12px 30px;
+            font-size: 1em;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        input[type="number"] {
+            padding: 10px;
+            font-size: 1em;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            width: 150px;
+        }
+
+        label {
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .result-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 5px solid #667eea;
+        }
+
+        .result-label {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        .result-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .simulation-log {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .log-entry {
+            padding: 5px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .complete {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .confidence-interval {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .explanation {
+            background: #fff3cd;
+            border-left: 5px solid #ffc107;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+
+        .collected-pieces {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 15px 0;
+            min-height: 60px;
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+            border: 2px dashed #dee2e6;
+        }
+
+        .collected-piece {
+            font-size: 2em;
+            animation: drop 0.5s ease;
+        }
+
+        @keyframes drop {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .stats-comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .stats-comparison { grid-template-columns: 1fr; }
+        }
+
+        .scenario-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab-btn {
+            padding: 10px 24px;
+            font-size: 0.95em;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            background: white;
+            color: #667eea;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-color: transparent;
+        }
+
+        .tab-btn:hover:not(.active) {
+            background: #f0f4ff;
+        }
+
+        .pieces-two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .pieces-two-col { grid-template-columns: 1fr; }
+        }
+
+        .piece-col-label {
+            font-size: 1.1em;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 10px;
+            padding: 6px;
+            border-radius: 6px;
+        }
+
+        .piece-col-label.white-label {
+            background: #f0f4ff;
+            color: #667eea;
+            border: 1px solid #c5d0f5;
+        }
+
+        .piece-col-label.black-label {
+            background: #2c2c2c;
+            color: #ddd;
+        }
+
+        .piece-card.black-piece {
+            background: #2c2c2c;
+            border-color: #444;
+            color: #eee;
+        }
+
+        .piece-card.black-piece .piece-name { color: #aab4e8; }
+        .piece-card.black-piece .piece-count { color: #bbb; }
+        .piece-card.black-piece .piece-needed { color: #7ec8a0; }
+        .piece-card.black-piece .progress-bar { background: #555; }
+        .piece-card.black-piece .progress-fill {
+            background: linear-gradient(90deg, #888, #bbb);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎲 Generalized Coupon Collector Problem</h1>
+        <p class="subtitle">Chess Pieces Edition: How many draws to complete a set?</p>
+
+        <div class="scenario-tabs">
+            <button class="tab-btn active" id="tab1" onclick="setScenario(1)">♟️ One Set (16 pieces)</button>
+            <button class="tab-btn" id="tab2" onclick="setScenario(2)">♟️♙ Two Sets — White &amp; Black (32 pieces)</button>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">📐 Theory</h2>
+            <div class="explanation">
+                <strong>Problem:</strong> Draw chess pieces i.i.d. uniformly at random (with replacement)
+                from $n$ types. We need $m_i$ copies of piece $i$. How many draws $T$ until every
+                quota is satisfied?
+            </div>
+
+            <div class="formula-box">
+                <p style="margin-bottom:10px"><strong>Closed-form expected value (via Poisson embedding):</strong></p>
+                <p>
+                $$\mathbb{E}[T_{\mathbf{m}}]
+                = n\int_0^\infty
+                \left[1 - \prod_{i=1}^n
+                \left(1 - e^{-x}\sum_{k=0}^{m_i-1}\frac{x^k}{k!}\right)
+                \right]dx$$
+                </p>
+                <p style="margin-top:10px; color:#555; font-size:0.95em">
+                <strong>Key idea:</strong> Embed draws in a rate-1 Poisson process. Thinning gives
+                independent Poisson streams of rate $1/n$ per type, so the wait for $m_i$ copies of
+                type $i$ is $Y_i \sim n \cdot \mathrm{Gamma}(m_i, 1)$. Then
+                $\mathbb{E}[T] = \mathbb{E}[\max_i Y_i]$ by Wald's identity, and the max-of-independent
+                formula plus the Gamma CDF
+                $\Pr(X_i \le x) = 1 - e^{-x}\sum_{k=0}^{m_i-1} x^k/k!$
+                gives the integral above.
+                </p>
+            </div>
+
+            <div class="formula-box">
+                <p style="margin-bottom:8px"><strong>Special case $m_i = 1$ for all $i$ (standard coupon collector):</strong></p>
+                <p>
+                $$\mathbb{E}[T] = n\int_0^\infty \bigl[1-(1-e^{-x})^n\bigr]\,dx = n\,H_n$$
+                </p>
+                <p style="margin-top:8px; color:#555; font-size:0.95em">
+                For $n=6$ uniform types: $\mathbb{E}[T]=6 H_6 = 6(1+\tfrac12+\cdots+\tfrac16)\approx 14.70$.
+                </p>
+            </div>
+
+            <div class="formula-box">
+                <p style="margin-bottom:8px"><strong>One set ($n=6$ types): $\mathbf{m} = (8,2,2,2,1,1)$ — pawns, rooks, bishops, knights, queen, king.</strong></p>
+                <p style="margin-top:6px"><strong>Two sets ($n=12$ types, white + black):</strong> same $\mathbf{m}$ vector doubled — we treat white king, black king, etc. as distinct coupon types and need one of each.</p>
+                <p style="margin-top:6px; color:#555; font-size:0.9em">Both integrals are evaluated numerically via composite Simpson's rule.</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title" id="piecesTitle">♟️ Chess Pieces</h2>
+            <div id="chessPiecesContainer"></div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">🎯 Exact Calculation</h2>
+            <div class="controls">
+                <button class="btn-primary" onclick="calculateExact()">Calculate Expected Value</button>
+            </div>
+            <div class="results-grid" id="exactResults"></div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">🎲 Monte Carlo Simulation</h2>
+            <div class="controls">
+                <label>
+                    Number of Trials:
+                    <input type="number" id="numTrials" value="10000" min="100" max="100000" step="100">
+                </label>
+                <button class="btn-success" id="runBtn" onclick="runMonteCarloSimulation()">Run Simulation</button>
+                <button class="btn-primary" onclick="runSingleTrial()">Single Trial (Visual)</button>
+                <button class="btn-secondary" onclick="resetSimulation()">Reset</button>
+            </div>
+
+            <div id="progressContainer" style="display:none; margin: 10px 0;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                    <span style="font-weight:bold; color:#495057;">Running simulation…</span>
+                    <span id="progressLabel" style="color:#667eea; font-weight:bold;">0 / 0</span>
+                </div>
+                <div style="width:100%; height:18px; background:#e9ecef; border-radius:9px; overflow:hidden;">
+                    <div id="progressFill" style="height:100%; width:0%; background:linear-gradient(90deg,#667eea,#764ba2); transition:width 0.15s ease; border-radius:9px;"></div>
+                </div>
+                <div id="progressLiveStats" style="margin-top:8px; font-size:0.85em; color:#555;"></div>
+            </div>
+
+            <div class="collected-pieces" id="collectedPieces"></div>
+
+            <div class="results-grid" id="simulationResults"></div>
+
+            <div id="confidenceInterval"></div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">📊 Comparison</h2>
+            <div class="stats-comparison" id="comparison"></div>
+        </div>
+    </div>
+
+    <script>
+        const PIECE_DEFS = [
+            { name: 'King',   whiteIcon: '♔', blackIcon: '♚', needed: 1 },
+            { name: 'Queen',  whiteIcon: '♕', blackIcon: '♛', needed: 1 },
+            { name: 'Rook',   whiteIcon: '♖', blackIcon: '♜', needed: 2 },
+            { name: 'Bishop', whiteIcon: '♗', blackIcon: '♝', needed: 2 },
+            { name: 'Knight', whiteIcon: '♘', blackIcon: '♞', needed: 2 },
+            { name: 'Pawn',   whiteIcon: '♙', blackIcon: '♟', needed: 8 },
+        ];
+
+        let scenario = 1; // 1 = one set, 2 = two sets
+        let chessPieces = [];  // active piece list for simulation
+        let exactExpectedValue = 0;
+        let onlineStats = null;
+
+        function buildPieceList() {
+            if (scenario === 1) {
+                return PIECE_DEFS.map(d => ({ name: d.name, icon: d.whiteIcon, needed: d.needed, collected: 0, color: 'white' }));
+            } else {
+                const whites = PIECE_DEFS.map(d => ({ name: 'W ' + d.name, icon: d.whiteIcon, needed: d.needed, collected: 0, color: 'white' }));
+                const blacks = PIECE_DEFS.map(d => ({ name: 'B ' + d.name, icon: d.blackIcon, needed: d.needed, collected: 0, color: 'black' }));
+                return [...whites, ...blacks];
+            }
+        }
+
+        function setScenario(n) {
+            scenario = n;
+            document.getElementById('tab1').classList.toggle('active', n === 1);
+            document.getElementById('tab2').classList.toggle('active', n === 2);
+            document.getElementById('piecesTitle').textContent =
+                n === 1 ? '♟️ Chess Pieces — One Set' : '♟️♙ Chess Pieces — White & Black';
+            resetSimulation();
+            calculateExact();
+        }
+
+        function renderChessPieces() {
+            const container = document.getElementById('chessPiecesContainer');
+
+            function cardHTML(piece) {
+                const progress = Math.min(100, (piece.collected / piece.needed) * 100);
+                const extra = piece.color === 'black' ? ' black-piece' : '';
+                return `
+                    <div class="piece-card${extra}">
+                        <div class="piece-icon">${piece.icon}</div>
+                        <div class="piece-name">${piece.name}</div>
+                        <div class="piece-needed">Need: ${piece.needed}</div>
+                        <div class="piece-count">Collected: ${piece.collected}</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width:${progress}%"></div>
+                        </div>
+                    </div>`;
+            }
+
+            if (scenario === 1) {
+                container.innerHTML = `<div class="chess-pieces">${chessPieces.map(cardHTML).join('')}</div>`;
+            } else {
+                const whites = chessPieces.filter(p => p.color === 'white');
+                const blacks = chessPieces.filter(p => p.color === 'black');
+                container.innerHTML = `
+                    <div class="pieces-two-col">
+                        <div>
+                            <div class="piece-col-label white-label">♔ White Pieces</div>
+                            <div class="chess-pieces">${whites.map(cardHTML).join('')}</div>
+                        </div>
+                        <div>
+                            <div class="piece-col-label black-label">♚ Black Pieces</div>
+                            <div class="chess-pieces">${blacks.map(cardHTML).join('')}</div>
+                        </div>
+                    </div>`;
+            }
+        }
+
+        // Regularized lower incomplete Gamma CDF for integer shape m:
+        // P(m, x) = 1 - e^{-x} * sum_{k=0}^{m-1} x^k / k!
+        function gammaCDF(m, x) {
+            if (m === 0) return 1; // convention: need 0 copies → already done
+            let sum = 0;
+            let term = 1;
+            for (let k = 0; k < m; k++) {
+                if (k > 0) term *= x / k;
+                sum += term;
+            }
+            return 1 - Math.exp(-x) * sum;
+        }
+
+        // Integrand of the exact formula:
+        // f(x) = 1 - prod_i gammaCDF(m_i, x)
+        function integrand(x) {
+            let prod = 1;
+            for (const piece of chessPieces) {
+                prod *= gammaCDF(piece.needed, x);
+            }
+            return 1 - prod;
+        }
+
+        // Numerical integration via substitution x = -ln(u) (maps [0,∞) → (0,1])
+        // then Gauss-Legendre on [0,1]. Uses a fine uniform grid for simplicity.
+        function calculateGeneralizedExpectedValue() {
+            const n = chessPieces.length;
+            // Adaptive Simpson's rule on [0, upperBound].
+            // The integrand decays to 0 fast; upper bound of ~200 is safe for m_i≤8.
+            const UPPER = 200;
+            const STEPS = 100000;
+            const h = UPPER / STEPS;
+            // Simpson's composite rule
+            let sum = integrand(0) + integrand(UPPER);
+            for (let i = 1; i < STEPS; i++) {
+                const x = i * h;
+                sum += (i % 2 === 0 ? 2 : 4) * integrand(x);
+            }
+            const integral = (h / 3) * sum;
+            return n * integral;
+        }
+
+        function calculateExact() {
+            chessPieces = buildPieceList();
+            renderChessPieces();
+            exactExpectedValue = calculateGeneralizedExpectedValue();
+
+            const total = chessPieces.reduce((s, p) => s + p.needed, 0);
+            const resultsDiv = document.getElementById('exactResults');
+            resultsDiv.innerHTML = `
+                <div class="result-card">
+                    <div class="result-label">Expected Draws (Exact)</div>
+                    <div class="result-value">${exactExpectedValue.toFixed(4)}</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-label">Total Pieces Needed</div>
+                    <div class="result-value">${total}</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-label">Efficiency</div>
+                    <div class="result-value">${(total / exactExpectedValue * 100).toFixed(1)}%</div>
+                </div>
+            `;
+        }
+
+        function resetPieceCollection() {
+            chessPieces = buildPieceList();
+        }
+
+        async function runSingleTrial() {
+            resetPieceCollection();
+            renderChessPieces();
+            document.getElementById('collectedPieces').innerHTML = '';
+            document.getElementById('simulationResults').innerHTML = '';
+
+            let draws = 0;
+            const collectedDiv = document.getElementById('collectedPieces');
+
+            while (!chessPieces.every(p => p.collected >= p.needed)) {
+                draws++;
+                const pieceIndex = Math.floor(Math.random() * chessPieces.length);
+                chessPieces[pieceIndex].collected++;
+
+                const pieceIcon = document.createElement('span');
+                pieceIcon.className = 'collected-piece';
+                pieceIcon.textContent = chessPieces[pieceIndex].icon;
+                collectedDiv.appendChild(pieceIcon);
+
+                renderChessPieces();
+                await new Promise(resolve => setTimeout(resolve, 50));
+            }
+
+            document.getElementById('simulationResults').innerHTML = `
+                <div class="result-card">
+                    <div class="result-label">Draws in This Trial</div>
+                    <div class="result-value complete">${draws}</div>
+                </div>
+            `;
+        }
+
+        function runSingleTrialSilent() {
+            const needs = chessPieces.map(p => p.needed);
+            const collected = new Int32Array(chessPieces.length);
+            const n = chessPieces.length;
+            let remaining = n;
+            let draws = 0;
+
+            while (remaining > 0) {
+                draws++;
+                const i = Math.floor(Math.random() * n);
+                collected[i]++;
+                if (collected[i] === needs[i]) remaining--;
+            }
+
+            return draws;
+        }
+
+        function makeOnlineStats(totalTrials) {
+            return {
+                n: 0,           // trials seen so far
+                N: totalTrials, // total planned
+                mean: 0,
+                M2: 0,          // Welford accumulator
+                min: Infinity,
+                max: -Infinity,
+                freq: new Map(), // value → count
+                modeVal: 0,
+                modeCount: 0,
+            };
+        }
+
+        function onlineUpdate(st, x) {
+            st.n++;
+            // Welford online mean/variance
+            const delta = x - st.mean;
+            st.mean += delta / st.n;
+            st.M2 += delta * (x - st.mean);
+            // min / max
+            if (x < st.min) st.min = x;
+            if (x > st.max) st.max = x;
+            // mode via frequency map
+            const c = (st.freq.get(x) ?? 0) + 1;
+            st.freq.set(x, c);
+            if (c > st.modeCount) { st.modeCount = c; st.modeVal = x; }
+            // Pruning: any entry that can't beat current mode even if it
+            // gets every remaining draw is dead weight — remove it.
+            const remaining = st.N - st.n;
+            if (remaining < st.modeCount) {
+                const threshold = st.modeCount - remaining;
+                for (const [val, cnt] of st.freq) {
+                    if (cnt < threshold) st.freq.delete(val);
+                }
+            }
+        }
+
+        function onlineGet(st) {
+            const stdDev = st.n > 1 ? Math.sqrt(st.M2 / st.n) : 0;
+            const se = stdDev / Math.sqrt(st.n);
+            return {
+                mean: st.mean, stdDev, se,
+                ciLower: st.mean - 1.96 * se,
+                ciUpper: st.mean + 1.96 * se,
+                min: st.min, max: st.max,
+                mode: st.modeVal,
+                mapSize: st.freq.size,
+            };
+        }
+
+        function runMonteCarloSimulation() {
+            const numTrials = parseInt(document.getElementById('numTrials').value);
+            onlineStats = makeOnlineStats(numTrials);
+            const CHUNK = 1000;
+
+            const btn = document.getElementById('runBtn');
+            btn.disabled = true;
+            btn.textContent = 'Running…';
+
+            const prog = document.getElementById('progressContainer');
+            const fill = document.getElementById('progressFill');
+            const label = document.getElementById('progressLabel');
+            const live = document.getElementById('progressLiveStats');
+            prog.style.display = 'block';
+            fill.style.width = '0%';
+            label.textContent = `0 / ${numTrials}`;
+            live.textContent = '';
+            document.getElementById('simulationResults').innerHTML = '';
+            document.getElementById('confidenceInterval').innerHTML = '';
+
+            function runChunk() {
+                const end = Math.min(onlineStats.n + CHUNK, numTrials);
+                while (onlineStats.n < end) {
+                    onlineUpdate(onlineStats, runSingleTrialSilent());
+                }
+
+                const done = onlineStats.n;
+                const pct = (done / numTrials * 100).toFixed(1);
+                fill.style.width = pct + '%';
+                label.textContent = `${done.toLocaleString()} / ${numTrials.toLocaleString()}`;
+
+                const s = onlineGet(onlineStats);
+                live.textContent = `Running mean: ${s.mean.toFixed(3)}  ±  ${(1.96 * s.se).toFixed(3)}  (95% CI)   |   freq map: ${s.mapSize} entries`;
+
+                if (done < numTrials) {
+                    setTimeout(runChunk, 0);
+                } else {
+                    finishSimulation(numTrials);
+                }
+            }
+
+            setTimeout(runChunk, 0);
+        }
+
+        function finishSimulation(numTrials) {
+            const s = onlineGet(onlineStats);
+
+            document.getElementById('progressContainer').style.display = 'none';
+            const btn = document.getElementById('runBtn');
+            btn.disabled = false;
+            btn.textContent = 'Run Simulation';
+
+            document.getElementById('simulationResults').innerHTML = `
+                <div class="result-card">
+                    <div class="result-label">Average Draws (${numTrials.toLocaleString()} trials)</div>
+                    <div class="result-value">${s.mean.toFixed(4)}</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-label">Mode</div>
+                    <div class="result-value">${s.mode}</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-label">Std Deviation</div>
+                    <div class="result-value">${s.stdDev.toFixed(4)}</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-label">Min / Max</div>
+                    <div class="result-value">${s.min} / ${s.max}</div>
+                </div>
+            `;
+
+            document.getElementById('confidenceInterval').innerHTML = `
+                <div class="confidence-interval">
+                    <strong>95% Confidence Interval for Expected Value:</strong><br>
+                    [${s.ciLower.toFixed(4)}, ${s.ciUpper.toFixed(4)}]<br>
+                    <small>We are 95% confident the true expected value lies in this range.</small>
+                </div>
+            `;
+
+            updateComparison(s.mean, s.ciLower, s.ciUpper);
+        }
+
+        function updateComparison(simMean, ciLower, ciUpper) {
+            if (exactExpectedValue === 0) {
+                calculateExact();
+            }
+
+            const difference = Math.abs(exactExpectedValue - simMean);
+            const percentDiff = (difference / exactExpectedValue * 100).toFixed(2);
+            const withinCI = exactExpectedValue >= ciLower && exactExpectedValue <= ciUpper;
+
+            document.getElementById('comparison').innerHTML = `
+                <div class="result-card">
+                    <div class="result-label">Exact (Theoretical)</div>
+                    <div class="result-value">${exactExpectedValue.toFixed(4)}</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-label">Simulation Average</div>
+                    <div class="result-value">${simMean.toFixed(4)}</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-label">Difference</div>
+                    <div class="result-value" style="font-size: 1.5em;">${difference.toFixed(4)} (${percentDiff}%)</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-label">Exact within 95% CI?</div>
+                    <div class="result-value" style="color: ${withinCI ? '#28a745' : '#dc3545'}; font-size: 1.5em;">
+                        ${withinCI ? '✓ Yes' : '✗ No'}
+                    </div>
+                </div>
+            `;
+        }
+
+        function resetSimulation() {
+            resetPieceCollection();
+            renderChessPieces();
+            document.getElementById('collectedPieces').innerHTML = '';
+            document.getElementById('simulationResults').innerHTML = '';
+            document.getElementById('confidenceInterval').innerHTML = '';
+            document.getElementById('comparison').innerHTML = '';
+            onlineStats = null;
+        }
+
+        // Initialize
+        calculateExact();
+    </script>
+</body>
+</html>
